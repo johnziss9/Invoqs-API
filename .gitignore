@@ -1,0 +1,47 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+
+# User-specific files
+*.user
+*.suo
+
+# Entity Framework
+Migrations/
+
+# Configuration with secrets
+appsettings.Production.json
+appsettings.Staging.json
+*.secrets.json
+.env
+
+# Database files (if using localdb/sqlite for testing)
+*.db
+*.sqlite
+*.mdf
+*.ldf
+
+# Docker override (may contain local passwords)
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# NuGet packages
+*.nupkg
+packages/
+
+# Temporary files
+*.tmp
+temp/
+
+# OS files
+.DS_Store
+Thumbs.db
