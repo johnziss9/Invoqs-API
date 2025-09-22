@@ -4,5 +4,5 @@ public enum JobType
 {
     SkipRental = 0,
     SandDelivery = 1,
-    FortCliffService = 2
+    ForkLiftService = 2
 }

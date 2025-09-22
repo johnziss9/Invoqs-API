@@ -19,9 +19,11 @@ public class CustomerDTO
 
     // Computed properties from Blazor model
     public int ActiveJobs { get; set; }
+    public int NewJobs { get; set; }
     public int CompletedJobs { get; set; }
+    public int CancelledJobs { get; set; }
     public decimal TotalRevenue { get; set; }
-    public int TotalJobs => ActiveJobs + CompletedJobs;
+    public int TotalJobs => ActiveJobs + NewJobs + CompletedJobs + CancelledJobs;
     public string Status => ActiveJobs > 0 ? "Active" : "Inactive";
 }
 

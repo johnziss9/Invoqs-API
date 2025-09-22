@@ -5,34 +5,11 @@ namespace Invoqs.API.DTOs;
 /// </summary>
 public class DashboardDataDTO
 {
-    // Revenue metrics
-    public decimal WeekRevenue { get; set; }
-    public decimal RevenueGrowth { get; set; }
-
-    // Job metrics
-    public int ActiveJobs { get; set; }
-    public int JobsScheduledToday { get; set; }
-    public int SkipRentals { get; set; }
-    public int SandDelivery { get; set; }
-    public int FortCliffServices { get; set; }
-
-    // Customer metrics
-    public int TotalCustomers { get; set; }
-    public int NewCustomersThisWeek { get; set; }
-
-    // Invoice metrics
-    public int PendingInvoices { get; set; }
-    public decimal PendingAmount { get; set; }
-    public int OverdueInvoices { get; set; }
-
-    // Service breakdown percentages
-    public decimal SkipRentalPercentage { get; set; }
-    public decimal SandDeliveryPercentage { get; set; }
-    public decimal FortCliffServicePercentage { get; set; }
-
-    // Computed properties
-    public int TotalActiveJobs => SkipRentals + SandDelivery + FortCliffServices;
-    public decimal TotalServiceJobs => TotalActiveJobs;
+    public CustomerMetricsDTO CustomerMetrics { get; set; } = new();
+    public JobMetricsDTO JobMetrics { get; set; } = new();
+    public RevenueMetricsDTO RevenueMetrics { get; set; } = new();
+    public InvoiceMetricsDTO InvoiceMetrics { get; set; } = new();
+    public DateTime LastUpdated { get; set; }
 }
 
 /// <summary>
@@ -62,14 +39,14 @@ public class JobMetricsDTO
     public int JobsScheduledThisWeek { get; set; }
 
     // Job type breakdown
-    public int SkipRentalJobs { get; set; }
-    public int SandDeliveryJobs { get; set; }
-    public int FortCliffServiceJobs { get; set; }
+    public int SkipRentals { get; set; }
+    public int SandDeliveries { get; set; }
+    public int ForkLiftServices { get; set; }
 
     // Percentages
     public decimal SkipRentalPercentage { get; set; }
     public decimal SandDeliveryPercentage { get; set; }
-    public decimal FortCliffServicePercentage { get; set; }
+    public decimal ForkLiftServicePercentage { get; set; }
 }
 
 /// <summary>
@@ -84,4 +61,16 @@ public class CustomerMetricsDTO
     public int NewCustomersThisMonth { get; set; }
     public decimal AverageJobsPerCustomer { get; set; }
     public decimal AverageRevenuePerCustomer { get; set; }
+}
+
+/// <summary>
+/// Invoice metrics for dashboard
+/// </summary>
+public class InvoiceMetricsDTO
+{
+    public int PendingInvoices { get; set; }
+    public int OverdueInvoices { get; set; }
+    public int DraftInvoices { get; set; }
+    public int PaidInvoices { get; set; }
+    public decimal TotalOutstanding { get; set; }
 }

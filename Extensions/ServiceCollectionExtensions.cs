@@ -1,6 +1,9 @@
 using FluentValidation;
+using FluentValidation.AspNetCore;
 using Invoqs.API.Data;
+using Invoqs.API.Interfaces;
 using Invoqs.API.Mappings;
+using Invoqs.API.Services;
 using Invoqs.API.Validators;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,10 +17,10 @@ public static class ServiceCollectionExtensions
     /// <summary>
     /// Register database services
     /// </summary>
-    public static IServiceCollection AddDatabaseServices(this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<InvoqsDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(configuration.GetConnectionString("InvoqsDBConnection")));
 
         return services;
     }
@@ -27,6 +30,9 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
+        services.AddFluentValidationAutoValidation()
+                .AddFluentValidationClientsideAdapters();
+            
         services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
 
         // Register validators explicitly for better control
@@ -50,10 +56,13 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddMappingServices(this IServiceCollection services)
     {
+        // AutoMapper configuration
         services.AddAutoMapper(cfg =>
-            {
-                cfg.AddProfile<MappingProfiles>();
-            }); return services;
+        {
+            cfg.AddMaps(typeof(Program).Assembly);
+        });
+
+        return services;
     }
 
     /// <summary>
@@ -61,11 +70,10 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddBusinessServices(this IServiceCollection services)
     {
-        // TODO: Add business service registrations
-        // services.AddScoped<ICustomerService, CustomerService>();
-        // services.AddScoped<IJobService, JobService>();
-        // services.AddScoped<IInvoiceService, InvoiceService>();
-        // services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<IJobService, JobService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }

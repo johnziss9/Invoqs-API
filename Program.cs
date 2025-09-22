@@ -9,7 +9,7 @@ var connectionString = builder.Configuration.GetConnectionString("InvoqsDBConnec
     ?? throw new InvalidOperationException("Connection string 'InvoqsDBConnection' not found.");
 
 // Register services using extension methods
-builder.Services.AddDatabaseServices(connectionString);
+builder.Services.AddDatabaseServices(builder.Configuration);
 builder.Services.AddValidationServices();
 builder.Services.AddMappingServices();
 // builder.Services.AddBusinessServices(); // TODO: Implement in Section 5

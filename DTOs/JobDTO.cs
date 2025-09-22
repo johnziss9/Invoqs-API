@@ -33,15 +33,15 @@ public class JobDTO
     {
         JobType.SkipRental => "Skip Rental",
         JobType.SandDelivery => "Sand Delivery",
-        JobType.FortCliffService => "Fort Cliff Service",
+        JobType.ForkLiftService => "Fork Lift Service",
         _ => Type.ToString()
     };
 
     public string TypeIcon => Type switch
     {
-        JobType.SkipRental => "/images/icons/skip-rental.png",
-        JobType.SandDelivery => "/images/icons/sand-delivery.png",
-        JobType.FortCliffService => "/images/icons/fort-cliff.png",
+        JobType.SkipRental => "/images/icons/skip.png",
+        JobType.SandDelivery => "/images/icons/sand.png",
+        JobType.ForkLiftService => "/images/icons/forklift.png",
         _ => "bi-briefcase"
     };
 
@@ -88,7 +88,7 @@ public class JobDTO
     {
         JobType.SkipRental => 0.05m, // 5%
         JobType.SandDelivery => 0.19m, // 19%
-        JobType.FortCliffService => 0.19m, // 19%
+        JobType.ForkLiftService => 0.19m, // 19%
         _ => 0.19m
     };
 
@@ -116,7 +116,7 @@ public class JobSummaryDTO
     {
         JobType.SkipRental => "Skip Rental",
         JobType.SandDelivery => "Sand Delivery",
-        JobType.FortCliffService => "Fort Cliff Service",
+        JobType.ForkLiftService => "Fork Lift Service",
         _ => Type.ToString()
     };
 }
