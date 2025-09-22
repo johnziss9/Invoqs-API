@@ -1,27 +1,44 @@
 using Invoqs.API.Data;
+using Invoqs.API.Extensions;
+using Invoqs.API.Middleware;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+var connectionString = builder.Configuration.GetConnectionString("InvoqsDBConnection")
+    ?? throw new InvalidOperationException("Connection string 'InvoqsDBConnection' not found.");
 
-builder.Services.AddDbContext<InvoqsDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("InvoqsDBConnection")));
+// Register services using extension methods
+builder.Services.AddDatabaseServices(connectionString);
+builder.Services.AddValidationServices();
+builder.Services.AddMappingServices();
+// builder.Services.AddBusinessServices(); // TODO: Implement in Section 5
+builder.Services.AddApiServices();
+builder.Services.AddCorsServices();
 
-// Add services to the container.
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+// Add logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Invoqs API v1");
+        c.RoutePrefix = string.Empty;
+    });
 }
 
+app.UseGlobalExceptionHandling();
+
 app.UseHttpsRedirection();
+
+app.UseCors("BlazorClient");
 
 app.UseAuthorization();
 
