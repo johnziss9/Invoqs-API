@@ -1,6 +1,12 @@
+using Invoqs.API.Data;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.AddDbContext<InvoqsDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("InvoqsDBConnection")));
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
