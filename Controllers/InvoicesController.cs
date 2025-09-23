@@ -158,12 +158,12 @@ namespace Invoqs.API.Controllers
         }
 
         /// <summary>
-        /// Record payment for invoice
+        /// Mark invoice as paid
         /// </summary>
         [HttpPost("{id:int}/payment")]
-        public async Task<ActionResult<InvoiceDTO>> RecordPayment(int id, MarkInvoiceAsPaidDTO paymentDto)
+        public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsPaid(int id, MarkInvoiceAsPaidDTO paymentDto)
         {
-            _logger.LogInformation("Recording payment for invoice ID: {InvoiceId}", id);
+            _logger.LogInformation("Marking invoice as paid with invoice ID: {InvoiceId}", id);
 
             try
             {
@@ -178,7 +178,7 @@ namespace Invoqs.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                _logger.LogWarning("Payment recording failed: {Error}", ex.Message);
+                _logger.LogWarning("Marking invoice as paid failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
         }

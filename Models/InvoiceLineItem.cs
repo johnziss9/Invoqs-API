@@ -24,6 +24,10 @@ public class InvoiceLineItem
 
     public bool IsDeleted { get; set; } = false;
 
+    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    
+    public DateTime? UpdatedDate { get; set; }
+
     // Navigation properties
     public virtual Invoice Invoice { get; set; } = null!;
     public virtual Job Job { get; set; } = null!;

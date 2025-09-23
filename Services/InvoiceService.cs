@@ -451,7 +451,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<InvoiceDTO?> MarkInvoiceAsPaidAsync(int id, MarkInvoiceAsPaidDTO paymentDTO)
     {
-        _logger.LogInformation("Recording payment for invoice ID: {Id}", id);
+        _logger.LogInformation("Marking invoice as paid with invoice ID: {Id}", id);
 
         try
         {
@@ -463,7 +463,7 @@ public class InvoiceService : IInvoiceService
 
             if (invoice == null)
             {
-                _logger.LogWarning("Invoice not found for payment recording with ID: {Id}", id);
+                _logger.LogWarning("Invoice not found to mark as paid with ID: {Id}", id);
                 return null;
             }
 
@@ -482,12 +482,12 @@ public class InvoiceService : IInvoiceService
 
             var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
 
-            _logger.LogInformation("Recorded payment for invoice: {InvoiceNumber}", invoice.InvoiceNumber);
+            _logger.LogInformation("Marked invoice as paid with Invoice ID: {InvoiceNumber}", invoice.InvoiceNumber);
             return invoiceDTO;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error recording payment for invoice ID: {Id}", id);
+            _logger.LogError(ex, "Error marking invoice as paid with invoice ID: {Id}", id);
             throw;
         }
     }

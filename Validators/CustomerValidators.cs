@@ -97,7 +97,7 @@ public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerDTO>
         // Phone number validation
         RuleFor(x => x.Phone)
             .NotEmpty().WithMessage("Phone number is required")
-            .Length(10, 20).WithMessage("Phone number must be between 10 and 20 characters")
+            .Length(6, 20).WithMessage("Phone number must be between 6 and 20 characters")
             .Matches(@"^[\+]?[\d\s\-\(\)]+$")
             .WithMessage("Please enter a valid phone number. Only numbers, spaces, hyphens, parentheses, and + are allowed");
 

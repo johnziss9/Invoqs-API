@@ -2,7 +2,6 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Invoqs.API.Data;
 using Invoqs.API.Interfaces;
-using Invoqs.API.Mappings;
 using Invoqs.API.Services;
 using Invoqs.API.Validators;
 using Microsoft.EntityFrameworkCore;
@@ -30,8 +29,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
-        services.AddFluentValidationAutoValidation()
-                .AddFluentValidationClientsideAdapters();
+        services.AddFluentValidationClientsideAdapters();
             
         services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
 
