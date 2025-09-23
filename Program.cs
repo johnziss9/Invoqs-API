@@ -1,4 +1,3 @@
-using Invoqs.API.Data;
 using Invoqs.API.Extensions;
 using Invoqs.API.Middleware;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +11,7 @@ var connectionString = builder.Configuration.GetConnectionString("InvoqsDBConnec
 builder.Services.AddDatabaseServices(builder.Configuration);
 builder.Services.AddValidationServices();
 builder.Services.AddMappingServices();
-// builder.Services.AddBusinessServices(); // TODO: Implement in Section 5
+builder.Services.AddBusinessServices();
 builder.Services.AddApiServices();
 builder.Services.AddCorsServices();
 
@@ -34,11 +33,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseGlobalExceptionHandling();
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
 app.UseCors("BlazorClient");
+
+app.UseRouting();
 
 app.UseAuthorization();
 

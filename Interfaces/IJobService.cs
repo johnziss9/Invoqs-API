@@ -9,6 +9,7 @@ public interface IJobService
     Task<IEnumerable<JobDTO>> GetJobsByCustomerIdAsync(int customerId);
     Task<IEnumerable<JobDTO>> GetCompletedUnInvoicedJobsAsync(int customerId);
     Task<Dictionary<string, IEnumerable<JobDTO>>> GetJobsGroupedByAddressAsync(int customerId);
+    Task<IEnumerable<JobDTO>> GetJobsByInvoiceIdAsync(int invoiceId);
     Task<JobDTO> CreateJobAsync(CreateJobDTO createDTO);
     Task<JobDTO?> UpdateJobAsync(int id, UpdateJobDTO updateDTO);
     Task<JobDTO?> UpdateJobStatusAsync(int id, UpdateJobStatusDTO statusDTO);

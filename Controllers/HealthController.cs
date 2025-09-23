@@ -17,10 +17,4 @@ public class HealthController : ControllerBase
             Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown"
         });
     }
-
-    [HttpGet("ping")]
-    public IActionResult Ping()
-    {
-        return Ok("pong");
-    }
 }

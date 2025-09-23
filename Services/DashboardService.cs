@@ -58,7 +58,7 @@ public class DashboardService : IDashboardService
         }
     }
 
-    private async Task<CustomerMetricsDTO> GetCustomerMetricsAsync(DateTime oneWeekAgo)
+    public async Task<CustomerMetricsDTO> GetCustomerMetricsAsync(DateTime oneWeekAgo)
     {
         try
         {
@@ -88,7 +88,7 @@ public class DashboardService : IDashboardService
         }
     }
 
-    private async Task<JobMetricsDTO> GetJobMetricsAsync(DateTime today)
+    public async Task<JobMetricsDTO> GetJobMetricsAsync(DateTime today)
     {
         try
         {
@@ -120,7 +120,7 @@ public class DashboardService : IDashboardService
         }
     }
 
-    private async Task<InvoiceMetricsDTO> GetInvoiceMetricsAsync()
+    public async Task<InvoiceMetricsDTO> GetInvoiceMetricsAsync()
     {
         try
         {
@@ -153,7 +153,7 @@ public class DashboardService : IDashboardService
         }
     }
 
-    private async Task<RevenueMetricsDTO> GetRevenueMetricsAsync(DateTime oneWeekAgo, DateTime twoWeeksAgo)
+    public async Task<RevenueMetricsDTO> GetRevenueMetricsAsync(DateTime oneWeekAgo, DateTime twoWeeksAgo)
     {
         try
         {
