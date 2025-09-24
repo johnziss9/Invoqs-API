@@ -14,6 +14,7 @@ public class MappingProfiles : Profile
         CreateCustomerMappings();
         CreateJobMappings();
         CreateInvoiceMappings();
+        CreateUserMappings();
     }
 
     private void CreateCustomerMappings()
@@ -130,6 +131,13 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
             .ForMember(dest => dest.Customer, opt => opt.Ignore())
             .ForMember(dest => dest.LineItems, opt => opt.Ignore());
+    }
+
+    private void CreateUserMappings()
+    {
+        // User Entity -> UserDTO
+        CreateMap<User, UserDTO>()
+            .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}".Trim()));
     }
 }
 
