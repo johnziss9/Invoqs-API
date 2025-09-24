@@ -13,6 +13,7 @@ public class InvoqsDbContext : DbContext
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceLineItem> InvoiceLineItems { get; set; }
+    public DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,6 +89,18 @@ public class InvoqsDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // Configure User entity
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.FirstName).HasMaxLength(50);
+            entity.Property(e => e.LastName).HasMaxLength(50);
+            entity.Property(e => e.PasswordHash).HasMaxLength(255);
         });
     }
 

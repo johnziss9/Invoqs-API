@@ -1,10 +1,13 @@
+using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Invoqs.API.Data;
 using Invoqs.API.Interfaces;
 using Invoqs.API.Services;
 using Invoqs.API.Validators;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Invoqs.API.Extensions;
 
@@ -30,7 +33,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
         services.AddFluentValidationClientsideAdapters();
-            
+
         services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
 
         // Register validators explicitly for better control
@@ -72,6 +75,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IJobService, JobService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }
@@ -126,4 +130,36 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+    
+    public static IServiceCollection AddAuthenticationServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwtSettings = configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
+        var key = Encoding.ASCII.GetBytes(secretKey);
+
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false; // TODO Set to true in production
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings["Issuer"],
+                ValidateAudience = true,
+                ValidAudience = jwtSettings["Audience"],
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            };
+        });
+
+        return services;
+    }
+
 }

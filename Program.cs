@@ -14,6 +14,7 @@ builder.Services.AddMappingServices();
 builder.Services.AddBusinessServices();
 builder.Services.AddApiServices();
 builder.Services.AddCorsServices();
+builder.Services.AddAuthenticationServices(builder.Configuration);
 
 // Add logging
 builder.Logging.ClearProviders();
@@ -40,6 +41,8 @@ app.UseHttpsRedirection();
 app.UseCors("BlazorClient");
 
 app.UseRouting();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 
