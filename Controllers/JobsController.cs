@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Invoqs.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class JobsController : ControllerBase
     {
         private readonly IJobService _jobService;
@@ -23,9 +25,17 @@ namespace Invoqs.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<JobDTO>>> GetAllJobs()
         {
-            _logger.LogInformation("Getting all jobs");
-            var jobs = await _jobService.GetAllJobsAsync();
-            return Ok(jobs);
+            try
+            {
+                _logger.LogInformation("Getting all jobs for user {UserId}", User.Identity?.Name);
+                var jobs = await _jobService.GetAllJobsAsync();
+                return Ok(jobs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving jobs for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving jobs" });
+            }
         }
 
         /// <summary>
@@ -34,16 +44,24 @@ namespace Invoqs.API.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<JobDTO>> GetJob(int id)
         {
-            _logger.LogInformation("Getting job with ID: {JobId}", id);
-
-            var job = await _jobService.GetJobByIdAsync(id);
-            if (job == null)
+            try
             {
-                _logger.LogWarning("Job with ID {JobId} not found", id);
-                return NotFound($"Job with ID {id} not found");
-            }
+                _logger.LogInformation("Getting job with ID: {JobId} for user {UserId}", id, User.Identity?.Name);
 
-            return Ok(job);
+                var job = await _jobService.GetJobByIdAsync(id);
+                if (job == null)
+                {
+                    _logger.LogWarning("Job with ID {JobId} not found", id);
+                    return NotFound($"Job with ID {id} not found");
+                }
+
+                return Ok(job);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving job with ID: {JobId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving the job" });
+            }
         }
 
         /// <summary>
@@ -52,9 +70,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("customer/{customerId:int}")]
         public async Task<ActionResult<IEnumerable<JobDTO>>> GetJobsByCustomer(int customerId)
         {
-            _logger.LogInformation("Getting jobs for customer ID: {CustomerId}", customerId);
-            var jobs = await _jobService.GetJobsByCustomerIdAsync(customerId);
-            return Ok(jobs);
+            try
+            {
+                _logger.LogInformation("Getting jobs for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                var jobs = await _jobService.GetJobsByCustomerIdAsync(customerId);
+                return Ok(jobs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving jobs for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving jobs for the customer" });
+            }
         }
 
         /// <summary>
@@ -63,9 +89,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("customer/{customerId:int}/uninvoiced")]
         public async Task<ActionResult<IEnumerable<JobDTO>>> GetUninvoicedJobs(int customerId)
         {
-            _logger.LogInformation("Getting uninvoiced jobs for customer ID: {CustomerId}", customerId);
-            var jobs = await _jobService.GetCompletedUnInvoicedJobsAsync(customerId);
-            return Ok(jobs);
+            try
+            {
+                _logger.LogInformation("Getting uninvoiced jobs for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                var jobs = await _jobService.GetCompletedUnInvoicedJobsAsync(customerId);
+                return Ok(jobs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving uninvoiced jobs for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving uninvoiced jobs" });
+            }
         }
 
         /// <summary>
@@ -74,9 +108,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("customer/{customerId:int}/grouped-by-address")]
         public async Task<ActionResult<Dictionary<string, IEnumerable<JobDTO>>>> GetJobsGroupedByAddress(int customerId)
         {
-            _logger.LogInformation("Getting jobs grouped by address for customer ID: {CustomerId}", customerId);
-            var jobGroups = await _jobService.GetJobsGroupedByAddressAsync(customerId);
-            return Ok(jobGroups);
+            try
+            {
+                _logger.LogInformation("Getting jobs grouped by address for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                var jobGroups = await _jobService.GetJobsGroupedByAddressAsync(customerId);
+                return Ok(jobGroups);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving jobs grouped by address for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving jobs grouped by address" });
+            }
         }
 
         /// <summary>
@@ -85,9 +127,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("invoice/{invoiceId:int}")]
         public async Task<ActionResult<IEnumerable<JobDTO>>> GetJobsByInvoice(int invoiceId)
         {
-            _logger.LogInformation("Getting jobs for invoice ID: {InvoiceId}", invoiceId);
-            var jobs = await _jobService.GetJobsByInvoiceIdAsync(invoiceId);
-            return Ok(jobs);
+            try
+            {
+                _logger.LogInformation("Getting jobs for invoice ID: {InvoiceId} for user {UserId}", invoiceId, User.Identity?.Name);
+                var jobs = await _jobService.GetJobsByInvoiceIdAsync(invoiceId);
+                return Ok(jobs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving jobs for invoice ID: {InvoiceId} for user {UserId}", invoiceId, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving jobs for the invoice" });
+            }
         }
 
         /// <summary>
@@ -96,8 +146,8 @@ namespace Invoqs.API.Controllers
         [HttpPost]
         public async Task<ActionResult<JobDTO>> CreateJob(CreateJobDTO createJobDto)
         {
-            _logger.LogInformation("Creating new job: {JobTitle} for customer ID: {CustomerId}",
-                createJobDto.Title, createJobDto.CustomerId);
+            _logger.LogInformation("Creating new job: {JobTitle} for customer ID: {CustomerId} for user {UserId}",
+                createJobDto.Title, createJobDto.CustomerId, User.Identity?.Name);
 
             try
             {
@@ -109,6 +159,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Job creation failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating job for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while creating the job" });
+            }
         }
 
         /// <summary>
@@ -117,7 +172,7 @@ namespace Invoqs.API.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<JobDTO>> UpdateJob(int id, UpdateJobDTO updateJobDto)
         {
-            _logger.LogInformation("Updating job with ID: {JobId}", id);
+            _logger.LogInformation("Updating job with ID: {JobId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -135,6 +190,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Job update failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating job with ID: {JobId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while updating the job" });
+            }
         }
 
         /// <summary>
@@ -143,7 +203,7 @@ namespace Invoqs.API.Controllers
         [HttpPut("{id:int}/status")]
         public async Task<ActionResult<JobDTO>> UpdateJobStatus(int id, UpdateJobStatusDTO statusDto)
         {
-            _logger.LogInformation("Updating status for job ID: {JobId} to {Status}", id, statusDto.Status);
+            _logger.LogInformation("Updating status for job ID: {JobId} to {Status} for user {UserId}", id, statusDto.Status, User.Identity?.Name);
 
             try
             {
@@ -161,6 +221,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Job status update failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating job status for ID: {JobId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while updating the job status" });
+            }
         }
 
         /// <summary>
@@ -169,7 +234,7 @@ namespace Invoqs.API.Controllers
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> DeleteJob(int id)
         {
-            _logger.LogInformation("Deleting job with ID: {JobId}", id);
+            _logger.LogInformation("Deleting job with ID: {JobId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -187,6 +252,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Job deletion failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting job with ID: {JobId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while deleting the job" });
+            }
         }
 
         /// <summary>
@@ -195,8 +265,8 @@ namespace Invoqs.API.Controllers
         [HttpPost("mark-as-invoiced")]
         public async Task<ActionResult> MarkJobsAsInvoiced(MarkJobsAsInvoicedDTO markJobsDto)
         {
-            _logger.LogInformation("Marking {JobCount} jobs as invoiced for invoice ID: {InvoiceId}",
-                markJobsDto.JobIds.Count(), markJobsDto.InvoiceId);
+            _logger.LogInformation("Marking {JobCount} jobs as invoiced for invoice ID: {InvoiceId} for user {UserId}",
+                markJobsDto.JobIds.Count(), markJobsDto.InvoiceId, User.Identity?.Name);
 
             try
             {
@@ -213,6 +283,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Failed to mark jobs as invoiced: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking jobs as invoiced for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while marking jobs as invoiced" });
+            }
         }
 
         /// <summary>
@@ -221,7 +296,7 @@ namespace Invoqs.API.Controllers
         [HttpPost("remove-from-invoice")]
         public async Task<ActionResult> RemoveJobsFromInvoice(RemoveJobsFromInvoiceDTO removeJobsDto)
         {
-            _logger.LogInformation("Removing {JobCount} jobs from invoice", removeJobsDto.JobIds.Count());
+            _logger.LogInformation("Removing {JobCount} jobs from invoice for user {UserId}", removeJobsDto.JobIds.Count(), User.Identity?.Name);
 
             try
             {
@@ -237,6 +312,11 @@ namespace Invoqs.API.Controllers
             {
                 _logger.LogWarning("Failed to remove jobs from invoice: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error removing jobs from invoice for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while removing jobs from invoice" });
             }
         }
     }

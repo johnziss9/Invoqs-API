@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.Services;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Invoqs.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class InvoicesController : ControllerBase
     {
         private readonly IInvoiceService _invoiceService;
@@ -24,9 +26,17 @@ namespace Invoqs.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<InvoiceDTO>>> GetAllInvoices()
         {
-            _logger.LogInformation("Getting all invoices");
-            var invoices = await _invoiceService.GetAllInvoicesAsync();
-            return Ok(invoices);
+            try
+            {
+                _logger.LogInformation("Getting all invoices for user {UserId}", User.Identity?.Name);
+                var invoices = await _invoiceService.GetAllInvoicesAsync();
+                return Ok(invoices);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving invoices for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving invoices" });
+            }
         }
 
         /// <summary>
@@ -35,16 +45,24 @@ namespace Invoqs.API.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<InvoiceDTO>> GetInvoice(int id)
         {
-            _logger.LogInformation("Getting invoice with ID: {InvoiceId}", id);
-
-            var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
-            if (invoice == null)
+            try
             {
-                _logger.LogWarning("Invoice with ID {InvoiceId} not found", id);
-                return NotFound($"Invoice with ID {id} not found");
-            }
+                _logger.LogInformation("Getting invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
-            return Ok(invoice);
+                var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice with ID {InvoiceId} not found", id);
+                    return NotFound($"Invoice with ID {id} not found");
+                }
+
+                return Ok(invoice);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving the invoice" });
+            }
         }
 
         /// <summary>
@@ -53,9 +71,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("customer/{customerId:int}")]
         public async Task<ActionResult<IEnumerable<InvoiceDTO>>> GetInvoicesByCustomer(int customerId)
         {
-            _logger.LogInformation("Getting invoices for customer ID: {CustomerId}", customerId);
-            var invoices = await _invoiceService.GetInvoicesByCustomerIdAsync(customerId);
-            return Ok(invoices);
+            try
+            {
+                _logger.LogInformation("Getting invoices for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                var invoices = await _invoiceService.GetInvoicesByCustomerIdAsync(customerId);
+                return Ok(invoices);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving invoices for customer ID: {CustomerId} for user {UserId}", customerId, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving invoices for the customer" });
+            }
         }
 
         /// <summary>
@@ -64,8 +90,8 @@ namespace Invoqs.API.Controllers
         [HttpPost]
         public async Task<ActionResult<InvoiceDTO>> CreateInvoice(CreateInvoiceDTO createInvoiceDto)
         {
-            _logger.LogInformation("Creating new invoice for customer ID: {CustomerId} with {JobCount} jobs",
-                createInvoiceDto.CustomerId, createInvoiceDto.JobIds.Count());
+            _logger.LogInformation("Creating new invoice for customer ID: {CustomerId} with {JobCount} jobs for user {UserId}",
+                createInvoiceDto.CustomerId, createInvoiceDto.JobIds.Count(), User.Identity?.Name);
 
             try
             {
@@ -77,6 +103,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Invoice creation failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating invoice for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while creating the invoice" });
+            }
         }
 
         /// <summary>
@@ -85,7 +116,7 @@ namespace Invoqs.API.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<InvoiceDTO>> UpdateInvoice(int id, UpdateInvoiceDTO updateInvoiceDto)
         {
-            _logger.LogInformation("Updating invoice with ID: {InvoiceId}", id);
+            _logger.LogInformation("Updating invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -103,6 +134,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Invoice update failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while updating the invoice" });
+            }
         }
 
         /// <summary>
@@ -111,7 +147,7 @@ namespace Invoqs.API.Controllers
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> DeleteInvoice(int id)
         {
-            _logger.LogInformation("Deleting invoice with ID: {InvoiceId}", id);
+            _logger.LogInformation("Deleting invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -129,6 +165,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Invoice deletion failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while deleting the invoice" });
+            }
         }
 
         /// <summary>
@@ -137,7 +178,7 @@ namespace Invoqs.API.Controllers
         [HttpPost("{id:int}/send")]
         public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsSent(int id, MarkInvoiceAsSentDTO sentDto)
         {
-            _logger.LogInformation("Marking invoice ID: {InvoiceId} as sent", id);
+            _logger.LogInformation("Marking invoice ID: {InvoiceId} as sent for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -155,6 +196,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Invoice send failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking invoice as sent for ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while marking the invoice as sent" });
+            }
         }
 
         /// <summary>
@@ -163,7 +209,7 @@ namespace Invoqs.API.Controllers
         [HttpPost("{id:int}/payment")]
         public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsPaid(int id, MarkInvoiceAsPaidDTO paymentDto)
         {
-            _logger.LogInformation("Marking invoice as paid with invoice ID: {InvoiceId}", id);
+            _logger.LogInformation("Marking invoice as paid with invoice ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -181,6 +227,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Marking invoice as paid failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking invoice as paid for ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while marking the invoice as paid" });
+            }
         }
 
         /// <summary>
@@ -189,7 +240,7 @@ namespace Invoqs.API.Controllers
         [HttpPost("{id:int}/cancel")]
         public async Task<ActionResult<InvoiceDTO>> CancelInvoice(int id)
         {
-            _logger.LogInformation("Cancelling invoice ID: {InvoiceId}", id);
+            _logger.LogInformation("Cancelling invoice ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -207,6 +258,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Invoice cancellation failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while cancelling the invoice" });
+            }
         }
 
         /// <summary>
@@ -215,9 +271,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("statistics")]
         public async Task<ActionResult<InvoiceStatisticsDTO>> GetInvoiceStatistics()
         {
-            _logger.LogInformation("Getting invoice statistics");
-            var statistics = await _invoiceService.GetInvoiceStatisticsAsync();
-            return Ok(statistics);
+            try
+            {
+                _logger.LogInformation("Getting invoice statistics for user {UserId}", User.Identity?.Name);
+                var statistics = await _invoiceService.GetInvoiceStatisticsAsync();
+                return Ok(statistics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving invoice statistics for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving invoice statistics" });
+            }
         }
 
         /// <summary>
@@ -226,9 +290,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("outstanding")]
         public async Task<ActionResult<decimal>> GetTotalOutstanding()
         {
-            _logger.LogInformation("Getting total outstanding amount");
-            var outstanding = await _invoiceService.GetTotalOutstandingAsync();
-            return Ok(outstanding);
+            try
+            {
+                _logger.LogInformation("Getting total outstanding amount for user {UserId}", User.Identity?.Name);
+                var outstanding = await _invoiceService.GetTotalOutstandingAsync();
+                return Ok(outstanding);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving total outstanding amount for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving the total outstanding amount" });
+            }
         }
     }
 }

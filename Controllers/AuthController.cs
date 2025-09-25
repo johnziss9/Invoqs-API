@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.DTOs;
 using Invoqs.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Invoqs.API.Controllers;
 
@@ -23,6 +24,7 @@ public class AuthController : ControllerBase
     /// <param name="loginDto">Login credentials</param>
     /// <returns>Authentication token and user information</returns>
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginUserDTO loginDto)
     {
         try
@@ -51,28 +53,32 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <returns>Current user information</returns>
     [HttpGet("me")]
-    [Microsoft.AspNetCore.Authorization.Authorize]
+    [Authorize]
     public async Task<IActionResult> GetCurrentUser()
     {
         try
         {
+            _logger.LogInformation("Getting current user info for user {UserId}", User.Identity?.Name);
             var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
+                _logger.LogWarning("Invalid token when getting current user for user {UserId}", User.Identity?.Name);
                 return Unauthorized(new { error = "Invalid token" });
             }
 
             var user = await _userService.GetUserByIdAsync(userId);
             if (user == null)
             {
+                _logger.LogWarning("User not found when getting current user for userId {UserId}", userId);
                 return NotFound(new { error = "User not found" });
             }
 
+            _logger.LogInformation("Successfully retrieved current user for userId {UserId}", userId);
             return Ok(user);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting current user");
+            _logger.LogError(ex, "Error getting current user for user {UserId}", User.Identity?.Name);
             return StatusCode(500, new { error = "An error occurred getting user information" });
         }
     }

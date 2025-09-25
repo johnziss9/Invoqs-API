@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Invoqs.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class CustomersController : ControllerBase
     {
         private readonly ICustomerService _customerService;
@@ -23,9 +25,17 @@ namespace Invoqs.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CustomerDTO>>> GetAllCustomers()
         {
-            _logger.LogInformation("Getting all customers");
-            var customers = await _customerService.GetAllCustomersAsync();
-            return Ok(customers);
+            try
+            {
+                _logger.LogInformation("Getting all customers for user {UserId}", User.Identity?.Name);
+                var customers = await _customerService.GetAllCustomersAsync();
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving customers");
+                return StatusCode(500, new { error = "An error occurred while retrieving customers" });
+            }
         }
 
         /// <summary>
@@ -34,16 +44,23 @@ namespace Invoqs.API.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<CustomerDTO>> GetCustomer(int id)
         {
-            _logger.LogInformation("Getting customer with ID: {CustomerId}", id);
-
-            var customer = await _customerService.GetCustomerByIdAsync(id);
-            if (customer == null)
+            try
             {
-                _logger.LogWarning("Customer with ID {CustomerId} not found", id);
-                return NotFound($"Customer with ID {id} not found");
-            }
+                _logger.LogInformation("Getting customer with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
+                var customer = await _customerService.GetCustomerByIdAsync(id);
+                if (customer == null)
+                {
+                    _logger.LogWarning("Customer with ID {CustomerId} not found", id);
+                    return NotFound($"Customer with ID {id} not found");
+                }
 
-            return Ok(customer);
+                return Ok(customer);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving customer with ID: {CustomerId}", id);
+                return StatusCode(500, new { error = "An error occurred while retrieving customer with ID {customerId}", id});
+            }
         }
 
         /// <summary>
@@ -52,7 +69,7 @@ namespace Invoqs.API.Controllers
         [HttpPost]
         public async Task<ActionResult<CustomerDTO>> CreateCustomer(CreateCustomerDTO createCustomerDto)
         {
-            _logger.LogInformation("Creating new customer: {CustomerName}", createCustomerDto.Name);
+            _logger.LogInformation("Creating new customer: {CustomerName} for user {UserId}", createCustomerDto.Name, User.Identity?.Name);
 
             try
             {
@@ -64,6 +81,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Customer creation failed - email already exists: {Email}", createCustomerDto.Email);
                 return Conflict(new { error = "Email address already exists", email = createCustomerDto.Email });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating customer for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while creating the customer" });
+            }
         }
 
         /// <summary>
@@ -72,7 +94,7 @@ namespace Invoqs.API.Controllers
         [HttpPut("{id:int}")]
         public async Task<ActionResult<CustomerDTO>> UpdateCustomer(int id, UpdateCustomerDTO updateCustomerDto)
         {
-            _logger.LogInformation("Updating customer with ID: {CustomerId}", id);
+            _logger.LogInformation("Updating customer with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -90,6 +112,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Customer update failed - email already exists: {Email}", updateCustomerDto.Email);
                 return Conflict(new { error = "Email address already exists", email = updateCustomerDto.Email });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating customer with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while updating the customer" });
+            }
         }
 
         /// <summary>
@@ -98,7 +125,7 @@ namespace Invoqs.API.Controllers
         [HttpDelete("{id:int}")]
         public async Task<ActionResult> DeleteCustomer(int id)
         {
-            _logger.LogInformation("Deleting customer with ID: {CustomerId}", id);
+            _logger.LogInformation("Deleting customer with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
@@ -116,6 +143,11 @@ namespace Invoqs.API.Controllers
                 _logger.LogWarning("Customer deletion failed: {Error}", ex.Message);
                 return BadRequest(new { error = ex.Message });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting customer with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while deleting the customer" });
+            }
         }
 
         /// <summary>
@@ -129,9 +161,17 @@ namespace Invoqs.API.Controllers
                 return BadRequest("Search term is required");
             }
 
-            _logger.LogInformation("Searching customers with term: {SearchTerm}", term);
-            var customers = await _customerService.SearchCustomersAsync(term);
-            return Ok(customers);
+            try
+            {
+                _logger.LogInformation("Searching customers with term: {SearchTerm} for user {UserId}", term, User.Identity?.Name);
+                var customers = await _customerService.SearchCustomersAsync(term);
+                return Ok(customers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching customers with term: {SearchTerm} for user {UserId}", term, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while searching for customers" });
+            }
         }
 
         /// <summary>
@@ -140,8 +180,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("{id:int}/exists")]
         public async Task<ActionResult<bool>> CustomerExists(int id)
         {
-            var exists = await _customerService.CustomerExistsAsync(id);
-            return Ok(exists);
+            try
+            {
+                _logger.LogInformation("Checking if customer exists with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
+                var exists = await _customerService.CustomerExistsAsync(id);
+                return Ok(exists);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking customer existence with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while checking if the customer exists" });
+            }
         }
 
         /// <summary>
@@ -150,9 +199,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("summaries")]
         public async Task<ActionResult<IEnumerable<CustomerSummaryDTO>>> GetCustomerSummaries()
         {
-            _logger.LogInformation("Getting customer summaries");
-            var summaries = await _customerService.GetCustomerSummariesAsync();
-            return Ok(summaries);
+            try
+            {
+                _logger.LogInformation("Getting customer summaries for user {UserId}", User.Identity?.Name);
+                var summaries = await _customerService.GetCustomerSummariesAsync();
+                return Ok(summaries);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving customer summaries for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving customer summaries" });
+            }
         }
     }
 }

@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.Services;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Invoqs.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class DashboardController : ControllerBase
     {
         private readonly IDashboardService _dashboardService;
@@ -24,9 +26,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("data")]
         public async Task<ActionResult<DashboardDataDTO>> GetDashboardData()
         {
-            _logger.LogInformation("Getting dashboard data");
-            var dashboardData = await _dashboardService.GetDashboardDataAsync();
-            return Ok(dashboardData);
+            try
+            {
+                _logger.LogInformation("Getting dashboard data for user {UserId}", User.Identity?.Name);
+                var dashboardData = await _dashboardService.GetDashboardDataAsync();
+                return Ok(dashboardData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving dashboard data for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving dashboard data" });
+            }
         }
 
         /// <summary>
@@ -35,10 +45,18 @@ namespace Invoqs.API.Controllers
         [HttpGet("customers")]
         public async Task<ActionResult<CustomerMetricsDTO>> GetCustomerMetrics()
         {
-            _logger.LogInformation("Getting customer metrics");
-            var oneWeekAgo = DateTime.UtcNow.Date.AddDays(-7);
-            var metrics = await _dashboardService.GetCustomerMetricsAsync(oneWeekAgo);
-            return Ok(metrics);
+            try
+            {
+                _logger.LogInformation("Getting customer metrics for user {UserId}", User.Identity?.Name);
+                var oneWeekAgo = DateTime.UtcNow.Date.AddDays(-7);
+                var metrics = await _dashboardService.GetCustomerMetricsAsync(oneWeekAgo);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving customer metrics for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving customer metrics" });
+            }
         }
 
         /// <summary>
@@ -47,10 +65,18 @@ namespace Invoqs.API.Controllers
         [HttpGet("jobs")]
         public async Task<ActionResult<JobMetricsDTO>> GetJobMetrics()
         {
-            _logger.LogInformation("Getting job metrics");
-            var today = DateTime.UtcNow.Date;
-            var metrics = await _dashboardService.GetJobMetricsAsync(today);
-            return Ok(metrics);
+            try
+            {
+                _logger.LogInformation("Getting job metrics for user {UserId}", User.Identity?.Name);
+                var today = DateTime.UtcNow.Date;
+                var metrics = await _dashboardService.GetJobMetricsAsync(today);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving job metrics for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving job metrics" });
+            }
         }
 
         /// <summary>
@@ -59,9 +85,17 @@ namespace Invoqs.API.Controllers
         [HttpGet("invoices")]
         public async Task<ActionResult<InvoiceMetricsDTO>> GetInvoiceMetrics()
         {
-            _logger.LogInformation("Getting invoice metrics");
-            var metrics = await _dashboardService.GetInvoiceMetricsAsync();
-            return Ok(metrics);
+            try
+            {
+                _logger.LogInformation("Getting invoice metrics for user {UserId}", User.Identity?.Name);
+                var metrics = await _dashboardService.GetInvoiceMetricsAsync();
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving invoice metrics for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving invoice metrics" });
+            }
         }
 
         /// <summary>
@@ -70,11 +104,19 @@ namespace Invoqs.API.Controllers
         [HttpGet("revenue")]
         public async Task<ActionResult<RevenueMetricsDTO>> GetRevenueMetrics()
         {
-            _logger.LogInformation("Getting revenue metrics");
-            var oneWeekAgo = DateTime.UtcNow.Date.AddDays(-7);
-            var twoWeeksAgo = DateTime.UtcNow.Date.AddDays(-14);
-            var metrics = await _dashboardService.GetRevenueMetricsAsync(oneWeekAgo, twoWeeksAgo);
-            return Ok(metrics);
+            try
+            {
+                _logger.LogInformation("Getting revenue metrics for user {UserId}", User.Identity?.Name);
+                var oneWeekAgo = DateTime.UtcNow.Date.AddDays(-7);
+                var twoWeeksAgo = DateTime.UtcNow.Date.AddDays(-14);
+                var metrics = await _dashboardService.GetRevenueMetricsAsync(oneWeekAgo, twoWeeksAgo);
+                return Ok(metrics);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving revenue metrics for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while retrieving revenue metrics" });
+            }
         }
     }
 }
