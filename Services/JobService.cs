@@ -170,7 +170,6 @@ public class JobService : IJobService
 
             var job = _mapper.Map<Job>(createDTO);
             job.CreatedDate = DateTime.UtcNow;
-            job.Status = JobStatus.New; // Always start as New
 
             _context.Jobs.Add(job);
             await _context.SaveChangesAsync();
