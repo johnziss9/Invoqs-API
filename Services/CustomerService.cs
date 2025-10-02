@@ -29,6 +29,7 @@ public class CustomerService : ICustomerService
         {
             var customers = await _context.Customers
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
+                .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .OrderBy(c => c.Name)
                 .ToListAsync();
 
@@ -59,6 +60,7 @@ public class CustomerService : ICustomerService
         {
             var customer = await _context.Customers
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
+                .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (customer == null)
@@ -122,6 +124,7 @@ public class CustomerService : ICustomerService
         {
             var customer = await _context.Customers
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
+                .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (customer == null)
@@ -235,6 +238,7 @@ public class CustomerService : ICustomerService
 
             var customers = await _context.Customers
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
+                .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .Where(c => c.Name.ToLower().Contains(searchLower)
                          || c.Email.ToLower().Contains(searchLower)
                          || (c.Phone != null && c.Phone.Contains(searchTerm)))
@@ -287,7 +291,7 @@ public class CustomerService : ICustomerService
         {
             // Calculate job statistics
             var jobs = customer.Jobs.Where(j => !j.IsDeleted).ToList();
-    
+
             customerDTO.ActiveJobs = jobs.Count(j => j.Status == JobStatus.Active);
             customerDTO.NewJobs = jobs.Count(j => j.Status == JobStatus.New);
             customerDTO.CompletedJobs = jobs.Count(j => j.Status == JobStatus.Completed);
@@ -296,8 +300,24 @@ public class CustomerService : ICustomerService
                 .Where(j => j.Status == JobStatus.Completed)
                 .Sum(j => j.Price);
 
-            _logger.LogDebug("Calculated statistics for customer {Id}: {ActiveJobs} active, £{Revenue} revenue",
-                customer.Id, customerDTO.ActiveJobs, customerDTO.TotalRevenue);
+            // Calculate financial tracking statistics
+            customerDTO.UninvoicedJobs = jobs.Count(j => 
+                j.Status == JobStatus.Completed && 
+                (j.InvoiceId == null || j.InvoiceId == 0));
+
+            // Get invoices for this customer (need to load them)
+            var invoices = customer.Invoices.Where(i => !i.IsDeleted).ToList();
+
+            customerDTO.UnpaidInvoices = invoices.Count(i => 
+                i.Status == InvoiceStatus.Sent || 
+                i.Status == InvoiceStatus.Overdue);
+
+            customerDTO.OutstandingAmount = invoices
+                .Where(i => i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Overdue)
+                .Sum(i => i.Total);
+
+            _logger.LogDebug("Calculated statistics for customer {Id}: {ActiveJobs} active, {UninvoicedJobs} uninvoiced, {UnpaidInvoices} unpaid, £{Revenue} revenue",
+                customer.Id, customerDTO.ActiveJobs, customerDTO.UninvoicedJobs, customerDTO.UnpaidInvoices, customerDTO.TotalRevenue);
         }
         catch (Exception ex)
         {
@@ -308,6 +328,9 @@ public class CustomerService : ICustomerService
             customerDTO.CompletedJobs = 0;
             customerDTO.CancelledJobs = 0;
             customerDTO.TotalRevenue = 0;
+            customerDTO.UninvoicedJobs = 0;
+            customerDTO.UnpaidInvoices = 0;
+            customerDTO.OutstandingAmount = 0;
         }
     }
 }

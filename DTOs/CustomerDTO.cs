@@ -23,8 +23,11 @@ public class CustomerDTO
     public int CompletedJobs { get; set; }
     public int CancelledJobs { get; set; }
     public decimal TotalRevenue { get; set; }
+    public int UninvoicedJobs { get; set; }
+    public int UnpaidInvoices { get; set; }
+    public decimal OutstandingAmount { get; set; }
     public int TotalJobs => ActiveJobs + NewJobs + CompletedJobs + CancelledJobs;
-    public string Status => ActiveJobs > 0 ? "Active" : "Inactive";
+    public bool HasActiveWork => ActiveJobs > 0 || NewJobs > 0;
 }
 
 /// <summary>
