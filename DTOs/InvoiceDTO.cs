@@ -181,20 +181,20 @@ public class MarkInvoiceAsPaidDTO
     public string? PaymentReference { get; set; }
 }
 
-/// <summary>
-/// Invoice statistics for dashboard
-/// </summary>
-public class InvoiceStatisticsDTO
-{
-    public int TotalInvoices { get; set; }
-    public int DraftInvoices { get; set; }
-    public int SentInvoices { get; set; }
-    public int PaidInvoices { get; set; }
-    public int OverdueInvoices { get; set; }
-    public int CancelledInvoices { get; set; }
-    public decimal TotalOutstanding { get; set; }
-    public decimal TotalPaid { get; set; }
-    public decimal WeeklyRevenue { get; set; }
-    public decimal MonthlyRevenue { get; set; }
-    public decimal YearlyRevenue { get; set; }
-}
+// /// <summary>
+// /// Invoice statistics for dashboard
+// /// </summary>
+// public class InvoiceStatisticsDTO
+// {
+//     public int TotalInvoices { get; set; }
+//     public int DraftInvoices { get; set; }
+//     public int SentInvoices { get; set; }
+//     public int PaidInvoices { get; set; }
+//     public int OverdueInvoices { get; set; }
+//     public int CancelledInvoices { get; set; }
+//     public decimal TotalOutstanding { get; set; }
+//     public decimal TotalPaid { get; set; }
+//     public decimal WeeklyRevenue { get; set; }
+//     public decimal MonthlyRevenue { get; set; }
+//     public decimal YearlyRevenue { get; set; }
+// }

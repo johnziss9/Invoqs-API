@@ -14,5 +14,5 @@ public interface IInvoiceService
     Task<InvoiceDTO?> MarkInvoiceAsPaidAsync(int id, MarkInvoiceAsPaidDTO paymentDTO);
     Task<InvoiceDTO?> CancelInvoiceAsync(int id);
     Task<decimal> GetTotalOutstandingAsync();
-    Task<InvoiceStatisticsDTO> GetInvoiceStatisticsAsync();
+    // Task<InvoiceStatisticsDTO> GetInvoiceStatisticsAsync();
 }
