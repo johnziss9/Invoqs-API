@@ -547,41 +547,41 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public async Task<InvoiceStatisticsDTO> GetInvoiceStatisticsAsync()
-    {
-        _logger.LogInformation("Getting invoice statistics");
+    // public async Task<InvoiceStatisticsDTO> GetInvoiceStatisticsAsync()
+    // {
+    //     _logger.LogInformation("Getting invoice statistics");
 
-        try
-        {
-            var invoices = await _context.Invoices.ToListAsync();
+    //     try
+    //     {
+    //         var invoices = await _context.Invoices.ToListAsync();
 
-            var statistics = new InvoiceStatisticsDTO
-            {
-                TotalInvoices = invoices.Count,
-                DraftInvoices = invoices.Count(i => i.Status == InvoiceStatus.Draft),
-                SentInvoices = invoices.Count(i => i.Status == InvoiceStatus.Sent),
-                PaidInvoices = invoices.Count(i => i.Status == InvoiceStatus.Paid),
-                OverdueInvoices = invoices.Count(i => i.Status == InvoiceStatus.Overdue),
-                CancelledInvoices = invoices.Count(i => i.Status == InvoiceStatus.Cancelled),
-                TotalOutstanding = invoices
-                    .Where(i => i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Overdue)
-                    .Sum(i => i.Total),
-                TotalPaid = invoices
-                    .Where(i => i.Status == InvoiceStatus.Paid)
-                    .Sum(i => i.Total)
-            };
+    //         var statistics = new InvoiceStatisticsDTO
+    //         {
+    //             TotalInvoices = invoices.Count,
+    //             DraftInvoices = invoices.Count(i => i.Status == InvoiceStatus.Draft),
+    //             SentInvoices = invoices.Count(i => i.Status == InvoiceStatus.Sent),
+    //             PaidInvoices = invoices.Count(i => i.Status == InvoiceStatus.Paid),
+    //             OverdueInvoices = invoices.Count(i => i.Status == InvoiceStatus.Overdue),
+    //             CancelledInvoices = invoices.Count(i => i.Status == InvoiceStatus.Cancelled),
+    //             TotalOutstanding = invoices
+    //                 .Where(i => i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Overdue)
+    //                 .Sum(i => i.Total),
+    //             TotalPaid = invoices
+    //                 .Where(i => i.Status == InvoiceStatus.Paid)
+    //                 .Sum(i => i.Total)
+    //         };
 
-            _logger.LogInformation("Retrieved invoice statistics: {TotalCount} total, £{Outstanding} outstanding",
-                statistics.TotalInvoices, statistics.TotalOutstanding);
+    //         _logger.LogInformation("Retrieved invoice statistics: {TotalCount} total, £{Outstanding} outstanding",
+    //             statistics.TotalInvoices, statistics.TotalOutstanding);
 
-            return statistics;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving invoice statistics");
-            throw;
-        }
-    }
+    //         return statistics;
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Error retrieving invoice statistics");
+    //         throw;
+    //     }
+    // }
 
     private async Task<string> GenerateInvoiceNumberAsync()
     {

@@ -265,24 +265,24 @@ namespace Invoqs.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get invoice statistics for dashboard
-        /// </summary>
-        [HttpGet("statistics")]
-        public async Task<ActionResult<InvoiceStatisticsDTO>> GetInvoiceStatistics()
-        {
-            try
-            {
-                _logger.LogInformation("Getting invoice statistics for user {UserId}", User.Identity?.Name);
-                var statistics = await _invoiceService.GetInvoiceStatisticsAsync();
-                return Ok(statistics);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving invoice statistics for user {UserId}", User.Identity?.Name);
-                return StatusCode(500, new { error = "An error occurred while retrieving invoice statistics" });
-            }
-        }
+        // /// <summary>
+        // /// Get invoice statistics for dashboard
+        // /// </summary>
+        // [HttpGet("statistics")]
+        // public async Task<ActionResult<InvoiceStatisticsDTO>> GetInvoiceStatistics()
+        // {
+        //     try
+        //     {
+        //         _logger.LogInformation("Getting invoice statistics for user {UserId}", User.Identity?.Name);
+        //         var statistics = await _invoiceService.GetInvoiceStatisticsAsync();
+        //         return Ok(statistics);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error retrieving invoice statistics for user {UserId}", User.Identity?.Name);
+        //         return StatusCode(500, new { error = "An error occurred while retrieving invoice statistics" });
+        //     }
+        // }
 
         /// <summary>
         /// Get total outstanding amount
