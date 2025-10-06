@@ -197,36 +197,36 @@ namespace Invoqs.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Update job status only
-        /// </summary>
-        [HttpPut("{id:int}/status")]
-        public async Task<ActionResult<JobDTO>> UpdateJobStatus(int id, UpdateJobStatusDTO statusDto)
-        {
-            _logger.LogInformation("Updating status for job ID: {JobId} to {Status} for user {UserId}", id, statusDto.Status, User.Identity?.Name);
+        // /// <summary>
+        // /// Update job status only
+        // /// </summary>
+        // [HttpPut("{id:int}/status")]
+        // public async Task<ActionResult<JobDTO>> UpdateJobStatus(int id, UpdateJobStatusDTO statusDto)
+        // {
+        //     _logger.LogInformation("Updating status for job ID: {JobId} to {Status} for user {UserId}", id, statusDto.Status, User.Identity?.Name);
 
-            try
-            {
-                var job = await _jobService.UpdateJobStatusAsync(id, statusDto);
-                if (job == null)
-                {
-                    _logger.LogWarning("Job with ID {JobId} not found for status update", id);
-                    return NotFound($"Job with ID {id} not found");
-                }
+        //     try
+        //     {
+        //         var job = await _jobService.UpdateJobStatusAsync(id, statusDto);
+        //         if (job == null)
+        //         {
+        //             _logger.LogWarning("Job with ID {JobId} not found for status update", id);
+        //             return NotFound($"Job with ID {id} not found");
+        //         }
 
-                return Ok(job);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning("Job status update failed: {Error}", ex.Message);
-                return BadRequest(new { error = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error updating job status for ID: {JobId} for user {UserId}", id, User.Identity?.Name);
-                return StatusCode(500, new { error = "An error occurred while updating the job status" });
-            }
-        }
+        //         return Ok(job);
+        //     }
+        //     catch (InvalidOperationException ex)
+        //     {
+        //         _logger.LogWarning("Job status update failed: {Error}", ex.Message);
+        //         return BadRequest(new { error = ex.Message });
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error updating job status for ID: {JobId} for user {UserId}", id, User.Identity?.Name);
+        //         return StatusCode(500, new { error = "An error occurred while updating the job status" });
+        //     }
+        // }
 
         /// <summary>
         /// Delete job (soft delete)

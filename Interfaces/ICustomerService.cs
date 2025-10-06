@@ -11,5 +11,5 @@ public interface ICustomerService
     Task<bool> DeleteCustomerAsync(int id);
     Task<bool> CustomerExistsAsync(int id);
     Task<IEnumerable<CustomerDTO>> SearchCustomersAsync(string searchTerm);
-    Task<IEnumerable<CustomerSummaryDTO>> GetCustomerSummariesAsync();
+    // Task<IEnumerable<CustomerSummaryDTO>> GetCustomerSummariesAsync();
 }
