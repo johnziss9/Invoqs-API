@@ -264,26 +264,26 @@ public class CustomerService : ICustomerService
         }
     }
 
-    public async Task<IEnumerable<CustomerSummaryDTO>> GetCustomerSummariesAsync()
-    {
-        _logger.LogInformation("Getting customer summaries for dropdowns");
+    // public async Task<IEnumerable<CustomerSummaryDTO>> GetCustomerSummariesAsync()
+    // {
+    //     _logger.LogInformation("Getting customer summaries for dropdowns");
 
-        try
-        {
-            var customers = await _context.Customers
-                .OrderBy(c => c.Name)
-                .ProjectTo<CustomerSummaryDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+    //     try
+    //     {
+    //         var customers = await _context.Customers
+    //             .OrderBy(c => c.Name)
+    //             .ProjectTo<CustomerSummaryDTO>(_mapper.ConfigurationProvider)
+    //             .ToListAsync();
 
-            _logger.LogInformation("Retrieved {Count} customer summaries", customers.Count);
-            return customers;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving customer summaries");
-            throw;
-        }
-    }
+    //         _logger.LogInformation("Retrieved {Count} customer summaries", customers.Count);
+    //         return customers;
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Error retrieving customer summaries");
+    //         throw;
+    //     }
+    // }
 
     private void CalculateCustomerStatistics(CustomerDTO customerDTO, Customer customer)
     {

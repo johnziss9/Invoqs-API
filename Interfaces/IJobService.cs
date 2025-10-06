@@ -12,7 +12,7 @@ public interface IJobService
     Task<IEnumerable<JobDTO>> GetJobsByInvoiceIdAsync(int invoiceId);
     Task<JobDTO> CreateJobAsync(CreateJobDTO createDTO);
     Task<JobDTO?> UpdateJobAsync(int id, UpdateJobDTO updateDTO);
-    Task<JobDTO?> UpdateJobStatusAsync(int id, UpdateJobStatusDTO statusDTO);
+    // Task<JobDTO?> UpdateJobStatusAsync(int id, UpdateJobStatusDTO statusDTO);
     Task<bool> DeleteJobAsync(int id);
     Task<bool> MarkJobsAsInvoicedAsync(IEnumerable<int> jobIds, int invoiceId);
     Task<bool> RemoveJobsFromInvoiceAsync(IEnumerable<int> jobIds);

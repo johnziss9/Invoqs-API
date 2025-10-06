@@ -193,23 +193,23 @@ namespace Invoqs.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Get lightweight customer summaries for dropdowns
-        /// </summary>
-        [HttpGet("summaries")]
-        public async Task<ActionResult<IEnumerable<CustomerSummaryDTO>>> GetCustomerSummaries()
-        {
-            try
-            {
-                _logger.LogInformation("Getting customer summaries for user {UserId}", User.Identity?.Name);
-                var summaries = await _customerService.GetCustomerSummariesAsync();
-                return Ok(summaries);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving customer summaries for user {UserId}", User.Identity?.Name);
-                return StatusCode(500, new { error = "An error occurred while retrieving customer summaries" });
-            }
-        }
+        // /// <summary>
+        // /// Get lightweight customer summaries for dropdowns
+        // /// </summary>
+        // [HttpGet("summaries")]
+        // public async Task<ActionResult<IEnumerable<CustomerSummaryDTO>>> GetCustomerSummaries()
+        // {
+        //     try
+        //     {
+        //         _logger.LogInformation("Getting customer summaries for user {UserId}", User.Identity?.Name);
+        //         var summaries = await _customerService.GetCustomerSummariesAsync();
+        //         return Ok(summaries);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         _logger.LogError(ex, "Error retrieving customer summaries for user {UserId}", User.Identity?.Name);
+        //         return StatusCode(500, new { error = "An error occurred while retrieving customer summaries" });
+        //     }
+        // }
     }
 }
