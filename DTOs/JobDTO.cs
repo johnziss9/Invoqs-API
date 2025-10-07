@@ -24,6 +24,19 @@ public class JobDTO
     public int? InvoiceId { get; set; }
     public DateTime? InvoicedDate { get; set; }
 
+    // ===== JOB TYPE SPECIFIC FIELDS =====
+    
+    // Skip Rental specific fields
+    public string? SkipType { get; set; }
+    public string? SkipNumber { get; set; }
+    
+    // Sand Delivery specific fields
+    public string? SandMaterialType { get; set; }
+    public string? SandDeliveryMethod { get; set; }
+    
+    // Forklift Service specific fields
+    public string? ForkliftSize { get; set; }
+
     // Customer information (included in responses)
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerEmail { get; set; } = string.Empty;
@@ -157,6 +170,26 @@ public class CreateJobDTO
     public DateTime StartDate { get; set; } = DateTime.Today.AddDays(1);
 
     public DateTime? EndDate { get; set; }
+
+    // ===== JOB TYPE SPECIFIC FIELDS =====
+    
+    // Skip Rental specific fields
+    [StringLength(50, ErrorMessage = "Skip type cannot exceed 50 characters")]
+    public string? SkipType { get; set; }
+    
+    [StringLength(50, ErrorMessage = "Skip number cannot exceed 50 characters")]
+    public string? SkipNumber { get; set; }
+    
+    // Sand Delivery specific fields
+    [StringLength(100, ErrorMessage = "Material type cannot exceed 100 characters")]
+    public string? SandMaterialType { get; set; }
+    
+    [StringLength(50, ErrorMessage = "Delivery method cannot exceed 50 characters")]
+    public string? SandDeliveryMethod { get; set; }
+    
+    // Forklift Service specific fields
+    [StringLength(10, ErrorMessage = "Forklift size cannot exceed 10 characters")]
+    public string? ForkliftSize { get; set; }
 }
 
 /// <summary>
@@ -195,6 +228,26 @@ public class UpdateJobDTO
     public DateTime StartDate { get; set; }
 
     public DateTime? EndDate { get; set; }
+
+    // ===== JOB TYPE SPECIFIC FIELDS =====
+    
+    // Skip Rental specific fields
+    [StringLength(50, ErrorMessage = "Skip type cannot exceed 50 characters")]
+    public string? SkipType { get; set; }
+    
+    [StringLength(50, ErrorMessage = "Skip number cannot exceed 50 characters")]
+    public string? SkipNumber { get; set; }
+    
+    // Sand Delivery specific fields
+    [StringLength(100, ErrorMessage = "Material type cannot exceed 100 characters")]
+    public string? SandMaterialType { get; set; }
+    
+    [StringLength(50, ErrorMessage = "Delivery method cannot exceed 50 characters")]
+    public string? SandDeliveryMethod { get; set; }
+    
+    // Forklift Service specific fields
+    [StringLength(10, ErrorMessage = "Forklift size cannot exceed 10 characters")]
+    public string? ForkliftSize { get; set; }
 }
 
 /// <summary>
