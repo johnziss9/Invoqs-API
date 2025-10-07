@@ -59,7 +59,7 @@ public class CreateCustomerDTO
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Phone number is required")]
-    [StringLength(20, MinimumLength = 10, ErrorMessage = "Phone number must be between 10 and 20 characters")]
+    [StringLength(20, MinimumLength = 6, ErrorMessage = "Phone number must be between 6 and 20 characters")]
     public string Phone { get; set; } = string.Empty;
 
     [StringLength(50, ErrorMessage = "Company registration number cannot exceed 50 characters")]
@@ -87,7 +87,7 @@ public class UpdateCustomerDTO
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Phone number is required")]
-    [StringLength(20, MinimumLength = 10, ErrorMessage = "Phone number must be between 10 and 20 characters")]
+    [StringLength(20, MinimumLength = 6, ErrorMessage = "Phone number must be between 6 and 20 characters")]
     public string Phone { get; set; } = string.Empty;
 
     [StringLength(50, ErrorMessage = "Company registration number cannot exceed 50 characters")]
