@@ -61,6 +61,43 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
             .Must(HaveEndDateWhenCompleted)
             .WithMessage("End date is required when job status is Completed")
             .WithName("EndDate");
+
+        // ===== JOB TYPE SPECIFIC FIELD VALIDATIONS =====
+
+        // Skip Rental validations
+        When(x => x.Type == JobType.SkipRental, () =>
+        {
+            RuleFor(x => x.SkipType)
+                .NotEmpty().WithMessage("Skip type is required for skip rentals")
+                .Must(BeValidSkipType).WithMessage("Invalid skip type. Must be SmallSkip, LargeSkip, or Hook");
+
+            When(x => x.SkipType == "SmallSkip" || x.SkipType == "LargeSkip", () =>
+            {
+                RuleFor(x => x.SkipNumber)
+                    .NotEmpty().WithMessage("Skip number is required for small and large skips")
+                    .MaximumLength(50).WithMessage("Skip number cannot exceed 50 characters");
+            });
+        });
+
+        // Sand Delivery validations
+        When(x => x.Type == JobType.SandDelivery, () =>
+        {
+            RuleFor(x => x.SandMaterialType)
+                .NotEmpty().WithMessage("Material type is required for sand delivery")
+                .Must(BeValidSandMaterialType).WithMessage("Invalid material type");
+
+            RuleFor(x => x.SandDeliveryMethod)
+                .NotEmpty().WithMessage("Delivery method is required for sand delivery")
+                .Must(BeValidSandDeliveryMethod).WithMessage("Invalid delivery method. Must be InBags or ByTruck");
+        });
+
+        // Forklift Service validations
+        When(x => x.Type == JobType.ForkLiftService, () =>
+        {
+            RuleFor(x => x.ForkliftSize)
+                .NotEmpty().WithMessage("Forklift size is required for forklift service")
+                .Must(BeValidForkliftSize).WithMessage("Invalid forklift size. Must be 17m or 25m");
+        });
     }
 
     private async Task<bool> BeValidCustomer(int customerId, CancellationToken cancellationToken)
@@ -76,6 +113,31 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
             return job.EndDate.HasValue;
         }
         return true;
+    }
+
+    private bool BeValidSkipType(string? skipType)
+    {
+        if (string.IsNullOrWhiteSpace(skipType)) return false;
+        return skipType == "SmallSkip" || skipType == "LargeSkip" || skipType == "Hook";
+    }
+
+    private bool BeValidSandMaterialType(string? materialType)
+    {
+        if (string.IsNullOrWhiteSpace(materialType)) return false;
+        var validTypes = new[] { "Sand", "CrushedStone", "SandMixedWithCrushedStone", "Soil" };
+        return validTypes.Contains(materialType);
+    }
+
+    private bool BeValidSandDeliveryMethod(string? deliveryMethod)
+    {
+        if (string.IsNullOrWhiteSpace(deliveryMethod)) return false;
+        return deliveryMethod == "InBags" || deliveryMethod == "ByTruck";
+    }
+
+    private bool BeValidForkliftSize(string? forkliftSize)
+    {
+        if (string.IsNullOrWhiteSpace(forkliftSize)) return false;
+        return forkliftSize == "17m" || forkliftSize == "25m";
     }
 }
 
@@ -142,6 +204,43 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
             .MustAsync(NotBeInvoicedWhenChangingCriticalFields)
             .WithMessage("Cannot modify invoiced job details")
             .WithName("Job");
+
+        // ===== JOB TYPE SPECIFIC FIELD VALIDATIONS =====
+
+        // Skip Rental validations
+        When(x => x.Type == JobType.SkipRental, () =>
+        {
+            RuleFor(x => x.SkipType)
+                .NotEmpty().WithMessage("Skip type is required for skip rentals")
+                .Must(BeValidSkipType).WithMessage("Invalid skip type. Must be SmallSkip, LargeSkip, or Hook");
+
+            When(x => x.SkipType == "SmallSkip" || x.SkipType == "LargeSkip", () =>
+            {
+                RuleFor(x => x.SkipNumber)
+                    .NotEmpty().WithMessage("Skip number is required for small and large skips")
+                    .MaximumLength(50).WithMessage("Skip number cannot exceed 50 characters");
+            });
+        });
+
+        // Sand Delivery validations
+        When(x => x.Type == JobType.SandDelivery, () =>
+        {
+            RuleFor(x => x.SandMaterialType)
+                .NotEmpty().WithMessage("Material type is required for sand delivery")
+                .Must(BeValidSandMaterialType).WithMessage("Invalid material type");
+
+            RuleFor(x => x.SandDeliveryMethod)
+                .NotEmpty().WithMessage("Delivery method is required for sand delivery")
+                .Must(BeValidSandDeliveryMethod).WithMessage("Invalid delivery method. Must be InBags or ByTruck");
+        });
+
+        // Forklift Service validations
+        When(x => x.Type == JobType.ForkLiftService, () =>
+        {
+            RuleFor(x => x.ForkliftSize)
+                .NotEmpty().WithMessage("Forklift size is required for forklift service")
+                .Must(BeValidForkliftSize).WithMessage("Invalid forklift size. Must be 17m or 25m");
+        });
     }
 
     public void SetJobIdForUpdate(int jobId)
@@ -206,6 +305,31 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
                currentJob.Address == jobDTO.Address &&
                currentJob.Type == jobDTO.Type &&
                currentJob.Price == jobDTO.Price;
+    }
+    
+    private bool BeValidSkipType(string? skipType)
+    {
+        if (string.IsNullOrWhiteSpace(skipType)) return false;
+        return skipType == "SmallSkip" || skipType == "LargeSkip" || skipType == "Hook";
+    }
+
+    private bool BeValidSandMaterialType(string? materialType)
+    {
+        if (string.IsNullOrWhiteSpace(materialType)) return false;
+        var validTypes = new[] { "Sand", "CrushedStone", "SandMixedWithCrushedStone", "Soil" };
+        return validTypes.Contains(materialType);
+    }
+
+    private bool BeValidSandDeliveryMethod(string? deliveryMethod)
+    {
+        if (string.IsNullOrWhiteSpace(deliveryMethod)) return false;
+        return deliveryMethod == "InBags" || deliveryMethod == "ByTruck";
+    }
+
+    private bool BeValidForkliftSize(string? forkliftSize)
+    {
+        if (string.IsNullOrWhiteSpace(forkliftSize)) return false;
+        return forkliftSize == "17m" || forkliftSize == "25m";
     }
 }
 
