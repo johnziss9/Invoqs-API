@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace Invoqs.API.DTOs;
 
 /// <summary>
@@ -49,26 +47,16 @@ public class CustomerSummaryDTO
 /// </summary>
 public class CreateCustomerDTO
 {
-    [Required(ErrorMessage = "Customer name is required")]
-    [StringLength(200, MinimumLength = 2, ErrorMessage = "Customer name must be between 2 and 200 characters")]
     public string Name { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Email address is required")]
-    [EmailAddress(ErrorMessage = "Please enter a valid email address")]
-    [StringLength(255, ErrorMessage = "Email address cannot exceed 255 characters")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Phone number is required")]
-    [StringLength(20, MinimumLength = 6, ErrorMessage = "Phone number must be between 6 and 20 characters")]
     public string Phone { get; set; } = string.Empty;
 
-    [StringLength(50, ErrorMessage = "Company registration number cannot exceed 50 characters")]
     public string? CompanyRegistrationNumber { get; set; }
 
-    [StringLength(20, ErrorMessage = "VAT number cannot exceed 20 characters")]
     public string? VatNumber { get; set; }
 
-    [StringLength(1000, ErrorMessage = "Notes cannot exceed 1000 characters")]
     public string? Notes { get; set; }
 }
 
@@ -77,25 +65,15 @@ public class CreateCustomerDTO
 /// </summary>
 public class UpdateCustomerDTO
 {
-    [Required(ErrorMessage = "Customer name is required")]
-    [StringLength(200, MinimumLength = 2, ErrorMessage = "Customer name must be between 2 and 200 characters")]
     public string Name { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Email address is required")]
-    [EmailAddress(ErrorMessage = "Please enter a valid email address")]
-    [StringLength(255, ErrorMessage = "Email address cannot exceed 255 characters")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Phone number is required")]
-    [StringLength(20, MinimumLength = 6, ErrorMessage = "Phone number must be between 6 and 20 characters")]
     public string Phone { get; set; } = string.Empty;
 
-    [StringLength(50, ErrorMessage = "Company registration number cannot exceed 50 characters")]
     public string? CompanyRegistrationNumber { get; set; }
 
-    [StringLength(20, ErrorMessage = "VAT number cannot exceed 20 characters")]
     public string? VatNumber { get; set; }
 
-    [StringLength(1000, ErrorMessage = "Notes cannot exceed 1000 characters")]
     public string? Notes { get; set; }
 }

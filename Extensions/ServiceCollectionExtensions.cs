@@ -32,6 +32,7 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
+        services.AddFluentValidationAutoValidation();
         services.AddFluentValidationClientsideAdapters();
 
         services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();
@@ -48,6 +49,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UpdateInvoiceValidator>();
         services.AddScoped<MarkInvoiceAsSentValidator>();
         services.AddScoped<MarkInvoiceAsPaidValidator>();
+        services.AddScoped<LoginUserValidator>();
 
         return services;
     }

@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Invoqs.API.Models;
@@ -10,8 +9,6 @@ public class InvoiceLineItem
     public int InvoiceId { get; set; }
     public int JobId { get; set; }
 
-    [Required]
-    [MaxLength(500)]
     public string Description { get; set; } = string.Empty;
 
     public int Quantity { get; set; } = 1;

@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Invoqs.API.Models;
 
 namespace Invoqs.API.DTOs;
@@ -139,34 +138,20 @@ public class JobSummaryDTO
 /// </summary>
 public class CreateJobDTO
 {
-    [Required(ErrorMessage = "Customer is required")]
-    [Range(1, int.MaxValue, ErrorMessage = "Please select a valid customer")]
     public int CustomerId { get; set; }
 
-    [Required(ErrorMessage = "Job title is required")]
-    [StringLength(200, MinimumLength = 3, ErrorMessage = "Job title must be between 3 and 200 characters")]
     public string Title { get; set; } = string.Empty;
 
-    [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
     public string? Description { get; set; }
 
-    [Required(ErrorMessage = "Service address is required")]
-    [StringLength(500, MinimumLength = 10, ErrorMessage = "Address must be between 10 and 500 characters")]
     public string Address { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Job type is required")]
-    [EnumDataType(typeof(JobType), ErrorMessage = "Please select a valid job type")]
     public JobType Type { get; set; }
 
-    [Required(ErrorMessage = "Job status is required")]
-    [EnumDataType(typeof(JobStatus), ErrorMessage = "Please select a valid job status")]
     public JobStatus Status { get; set; } = JobStatus.New;
 
-    [Required(ErrorMessage = "Price is required")]
-    [Range(0.01, 999999.99, ErrorMessage = "Price must be between £0.01 and £999,999.99")]
     public decimal Price { get; set; }
 
-    [Required(ErrorMessage = "Start date is required")]
     public DateTime StartDate { get; set; } = DateTime.Today.AddDays(1);
 
     public DateTime? EndDate { get; set; }
@@ -174,21 +159,16 @@ public class CreateJobDTO
     // ===== JOB TYPE SPECIFIC FIELDS =====
     
     // Skip Rental specific fields
-    [StringLength(50, ErrorMessage = "Skip type cannot exceed 50 characters")]
     public string? SkipType { get; set; }
     
-    [StringLength(50, ErrorMessage = "Skip number cannot exceed 50 characters")]
     public string? SkipNumber { get; set; }
     
     // Sand Delivery specific fields
-    [StringLength(100, ErrorMessage = "Material type cannot exceed 100 characters")]
     public string? SandMaterialType { get; set; }
     
-    [StringLength(50, ErrorMessage = "Delivery method cannot exceed 50 characters")]
     public string? SandDeliveryMethod { get; set; }
     
     // Forklift Service specific fields
-    [StringLength(10, ErrorMessage = "Forklift size cannot exceed 10 characters")]
     public string? ForkliftSize { get; set; }
 }
 
@@ -197,34 +177,20 @@ public class CreateJobDTO
 /// </summary>
 public class UpdateJobDTO
 {
-    [Required(ErrorMessage = "Customer is required")]
-    [Range(1, int.MaxValue, ErrorMessage = "Please select a valid customer")]
     public int CustomerId { get; set; }
 
-    [Required(ErrorMessage = "Job title is required")]
-    [StringLength(200, MinimumLength = 3, ErrorMessage = "Job title must be between 3 and 200 characters")]
     public string Title { get; set; } = string.Empty;
 
-    [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
     public string? Description { get; set; }
 
-    [Required(ErrorMessage = "Service address is required")]
-    [StringLength(500, MinimumLength = 10, ErrorMessage = "Address must be between 10 and 500 characters")]
     public string Address { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Job type is required")]
-    [EnumDataType(typeof(JobType), ErrorMessage = "Please select a valid job type")]
     public JobType Type { get; set; }
 
-    [Required(ErrorMessage = "Job status is required")]
-    [EnumDataType(typeof(JobStatus), ErrorMessage = "Please select a valid job status")]
     public JobStatus Status { get; set; }
 
-    [Required(ErrorMessage = "Price is required")]
-    [Range(0.01, 999999.99, ErrorMessage = "Price must be between £0.01 and £999,999.99")]
     public decimal Price { get; set; }
 
-    [Required(ErrorMessage = "Start date is required")]
     public DateTime StartDate { get; set; }
 
     public DateTime? EndDate { get; set; }
@@ -232,21 +198,16 @@ public class UpdateJobDTO
     // ===== JOB TYPE SPECIFIC FIELDS =====
     
     // Skip Rental specific fields
-    [StringLength(50, ErrorMessage = "Skip type cannot exceed 50 characters")]
     public string? SkipType { get; set; }
     
-    [StringLength(50, ErrorMessage = "Skip number cannot exceed 50 characters")]
     public string? SkipNumber { get; set; }
     
     // Sand Delivery specific fields
-    [StringLength(100, ErrorMessage = "Material type cannot exceed 100 characters")]
     public string? SandMaterialType { get; set; }
     
-    [StringLength(50, ErrorMessage = "Delivery method cannot exceed 50 characters")]
     public string? SandDeliveryMethod { get; set; }
     
     // Forklift Service specific fields
-    [StringLength(10, ErrorMessage = "Forklift size cannot exceed 10 characters")]
     public string? ForkliftSize { get; set; }
 }
 
@@ -255,8 +216,6 @@ public class UpdateJobDTO
 /// </summary>
 public class UpdateJobStatusDTO
 {
-    [Required(ErrorMessage = "Job status is required")]
-    [EnumDataType(typeof(JobStatus), ErrorMessage = "Please select a valid job status")]
     public JobStatus Status { get; set; }
 
     public DateTime? EndDate { get; set; }
@@ -267,12 +226,8 @@ public class UpdateJobStatusDTO
 /// </summary>
 public class MarkJobsAsInvoicedDTO
 {
-    [Required(ErrorMessage = "Job IDs are required")]
-    [MinLength(1, ErrorMessage = "At least one job ID is required")]
     public List<int> JobIds { get; set; } = new();
 
-    [Required(ErrorMessage = "Invoice ID is required")]
-    [Range(1, int.MaxValue, ErrorMessage = "Please provide a valid invoice ID")]
     public int InvoiceId { get; set; }
 }
 
@@ -281,7 +236,5 @@ public class MarkJobsAsInvoicedDTO
 /// </summary>
 public class RemoveJobsFromInvoiceDTO
 {
-    [Required(ErrorMessage = "Job IDs are required")]
-    [MinLength(1, ErrorMessage = "At least one job ID is required")]
     public List<int> JobIds { get; set; } = new();
 }
