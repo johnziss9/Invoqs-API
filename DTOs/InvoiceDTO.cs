@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Invoqs.API.Models;
 
 namespace Invoqs.API.DTOs;
@@ -116,21 +115,14 @@ public class InvoiceLineItemDTO
 /// </summary>
 public class CreateInvoiceDTO
 {
-    [Required(ErrorMessage = "Customer is required")]
-    [Range(1, int.MaxValue, ErrorMessage = "Please select a valid customer")]
     public int CustomerId { get; set; }
 
-    [Required(ErrorMessage = "At least one job is required")]
-    [MinLength(1, ErrorMessage = "Please select at least one job")]
     public List<int> JobIds { get; set; } = new();
 
-    [Range(0, 1, ErrorMessage = "VAT rate must be between 0% and 100%")]
     public decimal VatRate { get; set; } = 0.19m; // 19% default
 
-    [Range(1, 365, ErrorMessage = "Payment terms must be between 1 and 365 days")]
     public int PaymentTermsDays { get; set; } = 30;
 
-    [StringLength(1000, ErrorMessage = "Notes cannot exceed 1000 characters")]
     public string? Notes { get; set; }
 }
 
@@ -139,21 +131,14 @@ public class CreateInvoiceDTO
 /// </summary>
 public class UpdateInvoiceDTO
 {
-    [Required(ErrorMessage = "Customer is required")]
-    [Range(1, int.MaxValue, ErrorMessage = "Please select a valid customer")]
     public int CustomerId { get; set; }
 
-    [Required(ErrorMessage = "At least one job is required")]
-    [MinLength(1, ErrorMessage = "Please select at least one job")]
     public List<int> JobIds { get; set; } = new();
 
-    [Range(0, 1, ErrorMessage = "VAT rate must be between 0% and 100%")]
     public decimal VatRate { get; set; }
 
-    [Range(1, 365, ErrorMessage = "Payment terms must be between 1 and 365 days")]
     public int PaymentTermsDays { get; set; }
 
-    [StringLength(1000, ErrorMessage = "Notes cannot exceed 1000 characters")]
     public string? Notes { get; set; }
 }
 
@@ -170,14 +155,10 @@ public class MarkInvoiceAsSentDTO
 /// </summary>
 public class MarkInvoiceAsPaidDTO
 {
-    [Required(ErrorMessage = "Payment date is required")]
     public DateTime PaymentDate { get; set; } = DateTime.Today;
 
-    [Required(ErrorMessage = "Payment method is required")]
-    [StringLength(50, ErrorMessage = "Payment method cannot exceed 50 characters")]
     public string PaymentMethod { get; set; } = "Bank Transfer";
 
-    [StringLength(100, ErrorMessage = "Payment reference cannot exceed 100 characters")]
     public string? PaymentReference { get; set; }
 }
 

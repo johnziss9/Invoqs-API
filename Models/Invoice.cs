@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Invoqs.API.Models;
@@ -7,8 +6,6 @@ public class Invoice
 {
     public int Id { get; set; }
 
-    [Required]
-    [MaxLength(50)]
     public string InvoiceNumber { get; set; } = string.Empty;
 
     public int CustomerId { get; set; }
@@ -28,15 +25,12 @@ public class Invoice
     public InvoiceStatus Status { get; set; }
     public int PaymentTermsDays { get; set; } = 30;
 
-    [MaxLength(100)]
     public string? PaymentMethod { get; set; }
 
-    [MaxLength(200)]
     public string? PaymentReference { get; set; }
 
     public DateTime? PaymentDate { get; set; }
 
-    [MaxLength(1000)]
     public string? Notes { get; set; }
 
     public DateTime CreatedDate { get; set; }

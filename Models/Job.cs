@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Invoqs.API.Models;
@@ -9,15 +8,10 @@ public class Job
 
     public int CustomerId { get; set; }
 
-    [Required]
-    [MaxLength(200)]
     public string Title { get; set; } = string.Empty;
 
-    [MaxLength(1000)]
     public string? Description { get; set; }
 
-    [Required]
-    [MaxLength(500)]
     public string Address { get; set; } = string.Empty;
 
     public JobType Type { get; set; }
@@ -43,21 +37,16 @@ public class Job
     // ===== JOB TYPE SPECIFIC FIELDS =====
     
     // Skip Rental specific fields
-    [MaxLength(50)]
     public string? SkipType { get; set; }  // SmallSkip, LargeSkip, Hook
     
-    [MaxLength(50)]
     public string? SkipNumber { get; set; }  // Only for Small/Large skips
     
     // Sand Delivery specific fields
-    [MaxLength(100)]
     public string? SandMaterialType { get; set; }  // Sand, CrushedStone, SandMixedWithCrushedStone, Soil
     
-    [MaxLength(50)]
     public string? SandDeliveryMethod { get; set; }  // InBags, ByTruck
     
     // Forklift Service specific fields
-    [MaxLength(10)]
     public string? ForkliftSize { get; set; }  // 17m, 25m
 
     // Navigation properties
