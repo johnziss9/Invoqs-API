@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using FluentValidation;
 
 namespace Invoqs.API.Controllers
 {
@@ -67,8 +68,24 @@ namespace Invoqs.API.Controllers
         /// Create a new customer
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<CustomerDTO>> CreateCustomer(CreateCustomerDTO createCustomerDto)
+        public async Task<ActionResult<CustomerDTO>> CreateCustomer(
+            CreateCustomerDTO createCustomerDto,
+            [FromServices] IValidator<CreateCustomerDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(createCustomerDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Creating new customer: {CustomerName} for user {UserId}", createCustomerDto.Name, User.Identity?.Name);
 
             try
@@ -92,8 +109,25 @@ namespace Invoqs.API.Controllers
         /// Update existing customer
         /// </summary>
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<CustomerDTO>> UpdateCustomer(int id, UpdateCustomerDTO updateCustomerDto)
+        public async Task<ActionResult<CustomerDTO>> UpdateCustomer(
+            int id, 
+            UpdateCustomerDTO updateCustomerDto,
+            [FromServices] IValidator<UpdateCustomerDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(updateCustomerDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Updating customer with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
 
             try
