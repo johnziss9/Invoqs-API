@@ -33,7 +33,7 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
 
         RuleFor(x => x.Address)
             .NotEmpty().WithMessage("Service address is required")
-            .Length(10, 500).WithMessage("Address must be between 10 and 500 characters");
+            .Length(3, 500).WithMessage("Address must be between 3 and 500 characters");
 
         RuleFor(x => x.Type)
             .IsInEnum().WithMessage("Please select a valid job type");
@@ -169,7 +169,7 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
 
         RuleFor(x => x.Address)
             .NotEmpty().WithMessage("Service address is required")
-            .Length(10, 500).WithMessage("Address must be between 10 and 500 characters");
+            .Length(3, 500).WithMessage("Address must be between 3 and 500 characters");
 
         RuleFor(x => x.Type)
             .IsInEnum().WithMessage("Please select a valid job type");
