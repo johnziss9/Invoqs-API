@@ -32,7 +32,6 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddValidationServices(this IServiceCollection services)
     {
-        services.AddFluentValidationAutoValidation();
         services.AddFluentValidationClientsideAdapters();
 
         services.AddValidatorsFromAssemblyContaining<CreateCustomerValidator>();

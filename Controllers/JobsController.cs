@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using FluentValidation;
 
 namespace Invoqs.API.Controllers
 {
@@ -144,8 +145,24 @@ namespace Invoqs.API.Controllers
         /// Create a new job
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<JobDTO>> CreateJob(CreateJobDTO createJobDto)
+        public async Task<ActionResult<JobDTO>> CreateJob(
+            CreateJobDTO createJobDto, 
+            [FromServices] IValidator<CreateJobDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(createJobDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Creating new job: {JobTitle} for customer ID: {CustomerId} for user {UserId}",
                 createJobDto.Title, createJobDto.CustomerId, User.Identity?.Name);
 
@@ -170,8 +187,25 @@ namespace Invoqs.API.Controllers
         /// Update existing job
         /// </summary>
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<JobDTO>> UpdateJob(int id, UpdateJobDTO updateJobDto)
+        public async Task<ActionResult<JobDTO>> UpdateJob(
+            int id, 
+            UpdateJobDTO updateJobDto, 
+            [FromServices] IValidator<UpdateJobDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(updateJobDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Updating job with ID: {JobId} for user {UserId}", id, User.Identity?.Name);
 
             try
@@ -263,8 +297,24 @@ namespace Invoqs.API.Controllers
         /// Mark jobs as invoiced (batch operation)
         /// </summary>
         [HttpPost("mark-as-invoiced")]
-        public async Task<ActionResult> MarkJobsAsInvoiced(MarkJobsAsInvoicedDTO markJobsDto)
+        public async Task<ActionResult> MarkJobsAsInvoiced(
+            MarkJobsAsInvoicedDTO markJobsDto,
+            [FromServices] IValidator<MarkJobsAsInvoicedDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(markJobsDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Marking {JobCount} jobs as invoiced for invoice ID: {InvoiceId} for user {UserId}",
                 markJobsDto.JobIds.Count(), markJobsDto.InvoiceId, User.Identity?.Name);
 
@@ -294,8 +344,24 @@ namespace Invoqs.API.Controllers
         /// Remove jobs from invoice
         /// </summary>
         [HttpPost("remove-from-invoice")]
-        public async Task<ActionResult> RemoveJobsFromInvoice(RemoveJobsFromInvoiceDTO removeJobsDto)
+        public async Task<ActionResult> RemoveJobsFromInvoice(
+            RemoveJobsFromInvoiceDTO removeJobsDto,
+            [FromServices] IValidator<RemoveJobsFromInvoiceDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(removeJobsDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Removing {JobCount} jobs from invoice for user {UserId}", removeJobsDto.JobIds.Count(), User.Identity?.Name);
 
             try

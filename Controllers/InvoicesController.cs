@@ -3,6 +3,7 @@ using Invoqs.API.Services;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using FluentValidation;
 
 namespace Invoqs.API.Controllers
 {
@@ -88,8 +89,24 @@ namespace Invoqs.API.Controllers
         /// Create a new invoice from completed jobs
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<InvoiceDTO>> CreateInvoice(CreateInvoiceDTO createInvoiceDto)
+        public async Task<ActionResult<InvoiceDTO>> CreateInvoice(
+            CreateInvoiceDTO createInvoiceDto,
+            [FromServices] IValidator<CreateInvoiceDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(createInvoiceDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Creating new invoice for customer ID: {CustomerId} with {JobCount} jobs for user {UserId}",
                 createInvoiceDto.CustomerId, createInvoiceDto.JobIds.Count(), User.Identity?.Name);
 
@@ -114,8 +131,25 @@ namespace Invoqs.API.Controllers
         /// Update existing invoice (draft only)
         /// </summary>
         [HttpPut("{id:int}")]
-        public async Task<ActionResult<InvoiceDTO>> UpdateInvoice(int id, UpdateInvoiceDTO updateInvoiceDto)
+        public async Task<ActionResult<InvoiceDTO>> UpdateInvoice(
+            int id, 
+            UpdateInvoiceDTO updateInvoiceDto,
+            [FromServices] IValidator<UpdateInvoiceDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(updateInvoiceDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Updating invoice with ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
             try
@@ -176,8 +210,25 @@ namespace Invoqs.API.Controllers
         /// Mark invoice as sent
         /// </summary>
         [HttpPost("{id:int}/send")]
-        public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsSent(int id, MarkInvoiceAsSentDTO sentDto)
+        public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsSent(
+            int id, 
+            MarkInvoiceAsSentDTO sentDto,
+            [FromServices] IValidator<MarkInvoiceAsSentDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(sentDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Marking invoice ID: {InvoiceId} as sent for user {UserId}", id, User.Identity?.Name);
 
             try
@@ -207,8 +258,25 @@ namespace Invoqs.API.Controllers
         /// Mark invoice as paid
         /// </summary>
         [HttpPost("{id:int}/payment")]
-        public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsPaid(int id, MarkInvoiceAsPaidDTO paymentDto)
+        public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsPaid(
+            int id, 
+            MarkInvoiceAsPaidDTO paymentDto,
+            [FromServices] IValidator<MarkInvoiceAsPaidDTO> validator)
         {
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(paymentDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new 
+                { 
+                    errors = validationResult.Errors.Select(e => new 
+                    { 
+                        field = e.PropertyName, 
+                        message = e.ErrorMessage 
+                    }) 
+                });
+            }
+
             _logger.LogInformation("Marking invoice as paid with invoice ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
             try

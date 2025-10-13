@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Invoqs.API.DTOs;
 using Invoqs.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using FluentValidation;
 
 namespace Invoqs.API.Controllers;
 
@@ -25,8 +26,24 @@ public class AuthController : ControllerBase
     /// <returns>Authentication token and user information</returns>
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginUserDTO loginDto)
+    public async Task<IActionResult> Login(
+        [FromBody] LoginUserDTO loginDto,
+        [FromServices] IValidator<LoginUserDTO> validator)
     {
+        // Manually validate with async support
+        var validationResult = await validator.ValidateAsync(loginDto);
+        if (!validationResult.IsValid)
+        {
+            return BadRequest(new 
+            { 
+                errors = validationResult.Errors.Select(e => new 
+                { 
+                    field = e.PropertyName, 
+                    message = e.ErrorMessage 
+                }) 
+            });
+        }
+
         try
         {
             _logger.LogInformation("Login attempt for email: {Email}", loginDto.Email);
