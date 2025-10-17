@@ -66,7 +66,7 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceDTO>
     {
         var uninvoicedCount = await _context.Jobs
             .Where(j => jobIds.Contains(j.Id))
-            .CountAsync(j => !j.IsInvoiced, cancellationToken);
+            .CountAsync(j => j.InvoiceId == null, cancellationToken);
         return uninvoicedCount == jobIds.Count;
     }
 
