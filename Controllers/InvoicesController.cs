@@ -4,6 +4,7 @@ using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
+using Invoqs.API.Validators;
 
 namespace Invoqs.API.Controllers
 {
@@ -97,13 +98,13 @@ namespace Invoqs.API.Controllers
             var validationResult = await validator.ValidateAsync(createInvoiceDto);
             if (!validationResult.IsValid)
             {
-                return BadRequest(new 
-                { 
-                    errors = validationResult.Errors.Select(e => new 
-                    { 
-                        field = e.PropertyName, 
-                        message = e.ErrorMessage 
-                    }) 
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        message = e.ErrorMessage
+                    })
                 });
             }
 
@@ -132,7 +133,7 @@ namespace Invoqs.API.Controllers
         /// </summary>
         [HttpPut("{id:int}")]
         public async Task<ActionResult<InvoiceDTO>> UpdateInvoice(
-            int id, 
+            int id,
             UpdateInvoiceDTO updateInvoiceDto,
             [FromServices] IValidator<UpdateInvoiceDTO> validator)
         {
@@ -140,13 +141,13 @@ namespace Invoqs.API.Controllers
             var validationResult = await validator.ValidateAsync(updateInvoiceDto);
             if (!validationResult.IsValid)
             {
-                return BadRequest(new 
-                { 
-                    errors = validationResult.Errors.Select(e => new 
-                    { 
-                        field = e.PropertyName, 
-                        message = e.ErrorMessage 
-                    }) 
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        message = e.ErrorMessage
+                    })
                 });
             }
 
@@ -211,21 +212,26 @@ namespace Invoqs.API.Controllers
         /// </summary>
         [HttpPost("{id:int}/send")]
         public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsSent(
-            int id, 
+            int id,
             MarkInvoiceAsSentDTO sentDto,
             [FromServices] IValidator<MarkInvoiceAsSentDTO> validator)
         {
+            if (validator is MarkInvoiceAsSentValidator typedValidator)
+            {
+                typedValidator.SetInvoiceIdForSent(id);
+            }
+
             // Manually validate with async support
             var validationResult = await validator.ValidateAsync(sentDto);
             if (!validationResult.IsValid)
             {
-                return BadRequest(new 
-                { 
-                    errors = validationResult.Errors.Select(e => new 
-                    { 
-                        field = e.PropertyName, 
-                        message = e.ErrorMessage 
-                    }) 
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        message = e.ErrorMessage
+                    })
                 });
             }
 
@@ -259,7 +265,7 @@ namespace Invoqs.API.Controllers
         /// </summary>
         [HttpPost("{id:int}/payment")]
         public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsPaid(
-            int id, 
+            int id,
             MarkInvoiceAsPaidDTO paymentDto,
             [FromServices] IValidator<MarkInvoiceAsPaidDTO> validator)
         {
@@ -267,13 +273,13 @@ namespace Invoqs.API.Controllers
             var validationResult = await validator.ValidateAsync(paymentDto);
             if (!validationResult.IsValid)
             {
-                return BadRequest(new 
-                { 
-                    errors = validationResult.Errors.Select(e => new 
-                    { 
-                        field = e.PropertyName, 
-                        message = e.ErrorMessage 
-                    }) 
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        message = e.ErrorMessage
+                    })
                 });
             }
 

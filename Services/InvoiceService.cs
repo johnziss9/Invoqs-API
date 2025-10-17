@@ -426,9 +426,11 @@ public class InvoiceService : IInvoiceService
                 return null;
             }
 
+            var statusInt = (int)invoice.Status;
+            
             if (invoice.Status != InvoiceStatus.Draft)
             {
-                throw new InvalidOperationException("Only draft invoices can be marked as sent");
+                throw new InvalidOperationException($"Only draft invoices can be marked as sent. Current status: {invoice.Status} ({statusInt})");
             }
 
             invoice.Status = InvoiceStatus.Sent;
