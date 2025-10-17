@@ -255,56 +255,56 @@ public class JobService : IJobService
         }
     }
 
-    // public async Task<JobDTO?> UpdateJobStatusAsync(int id, UpdateJobStatusDTO statusDTO)
-    // {
-    //     _logger.LogInformation("Updating job status ID: {Id} to {Status}", id, statusDTO.Status);
+    public async Task<JobDTO?> UpdateJobStatusAsync(int id, UpdateJobStatusDTO statusDTO)
+    {
+        _logger.LogInformation("Updating job status ID: {Id} to {Status}", id, statusDTO.Status);
 
-    //     try
-    //     {
-    //         var job = await _context.Jobs
-    //             .Include(j => j.Customer)
-    //             .Include(j => j.Invoice)
-    //             .FirstOrDefaultAsync(j => j.Id == id);
+        try
+        {
+            var job = await _context.Jobs
+                .Include(j => j.Customer)
+                .Include(j => j.Invoice)
+                .FirstOrDefaultAsync(j => j.Id == id);
 
-    //         if (job == null)
-    //         {
-    //             _logger.LogWarning("Job not found for status update with ID: {Id}", id);
-    //             return null;
-    //         }
+            if (job == null)
+            {
+                _logger.LogWarning("Job not found for status update with ID: {Id}", id);
+                return null;
+            }
 
-    //         // Validate status transition
-    //         if (!IsValidStatusTransition(job.Status, statusDTO.Status))
-    //         {
-    //             throw new InvalidOperationException($"Cannot change job status from {job.Status} to {statusDTO.Status}");
-    //         }
+            // Validate status transition
+            if (!IsValidStatusTransition(job.Status, statusDTO.Status))
+            {
+                throw new InvalidOperationException($"Cannot change job status from {job.Status} to {statusDTO.Status}");
+            }
 
-    //         job.Status = statusDTO.Status;
+            job.Status = statusDTO.Status;
 
-    //         // Handle completion
-    //         if (statusDTO.Status == JobStatus.Completed && !job.EndDate.HasValue)
-    //         {
-    //             job.EndDate = DateTime.UtcNow;
-    //         }
-    //         else if (statusDTO.Status != JobStatus.Completed)
-    //         {
-    //             job.EndDate = null; // Clear end date if reverting from completed
-    //         }
+            // Handle completion
+            if (statusDTO.Status == JobStatus.Completed && !job.EndDate.HasValue)
+            {
+                job.EndDate = DateTime.UtcNow;
+            }
+            else if (statusDTO.Status != JobStatus.Completed)
+            {
+                job.EndDate = null; // Clear end date if reverting from completed
+            }
 
-    //         job.UpdatedDate = DateTime.UtcNow;
+            job.UpdatedDate = DateTime.UtcNow;
 
-    //         await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
-    //         var jobDTO = _mapper.Map<JobDTO>(job);
+            var jobDTO = _mapper.Map<JobDTO>(job);
 
-    //         _logger.LogInformation("Updated job status: {Title} to {Status}", job.Title, statusDTO.Status);
-    //         return jobDTO;
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Error updating job status ID: {Id}", id);
-    //         throw;
-    //     }
-    // }
+            _logger.LogInformation("Updated job status: {Title} to {Status}", job.Title, statusDTO.Status);
+            return jobDTO;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating job status ID: {Id}", id);
+            throw;
+        }
+    }
 
     public async Task<bool> DeleteJobAsync(int id)
     {
