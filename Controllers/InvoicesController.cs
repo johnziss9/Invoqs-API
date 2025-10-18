@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Invoqs.API.Services;
 using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -14,11 +13,13 @@ namespace Invoqs.API.Controllers
     public class InvoicesController : ControllerBase
     {
         private readonly IInvoiceService _invoiceService;
+        private readonly IPdfService _pdfService;
         private readonly ILogger<InvoicesController> _logger;
 
-        public InvoicesController(IInvoiceService invoiceService, ILogger<InvoicesController> logger)
+        public InvoicesController(IInvoiceService invoiceService, IPdfService pdfService, ILogger<InvoicesController> logger)
         {
             _invoiceService = invoiceService;
+            _pdfService = pdfService;
             _logger = logger;
         }
 
@@ -374,6 +375,38 @@ namespace Invoqs.API.Controllers
             {
                 _logger.LogError(ex, "Error retrieving total outstanding amount for user {UserId}", User.Identity?.Name);
                 return StatusCode(500, new { error = "An error occurred while retrieving the total outstanding amount" });
+            }
+        }
+
+        /// <summary>
+        /// Download invoice as PDF
+        /// </summary>
+        [HttpGet("{id:int}/pdf")]
+        public async Task<IActionResult> GetInvoicePdf(int id)
+        {
+            try
+            {
+                _logger.LogInformation("Generating PDF for invoice ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+
+                var pdfBytes = await _pdfService.GenerateInvoicePdfAsync(id);
+
+                // Get invoice to use invoice number in filename
+                var invoice = await _invoiceService.GetInvoiceByIdAsync(id);
+                var fileName = invoice != null
+                    ? $"{invoice.InvoiceNumber}.pdf"
+                    : $"Invoice-{id}.pdf";
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Invoice PDF generation failed: {Error}", ex.Message);
+                return NotFound(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating PDF for invoice ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while generating the invoice PDF" });
             }
         }
     }
