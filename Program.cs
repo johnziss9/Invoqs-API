@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure QuestPDF license
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 var connectionString = builder.Configuration.GetConnectionString("InvoqsDBConnection")
     ?? throw new InvalidOperationException("Connection string 'InvoqsDBConnection' not found.");
 
