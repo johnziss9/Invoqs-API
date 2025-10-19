@@ -270,6 +270,11 @@ namespace Invoqs.API.Controllers
             MarkInvoiceAsPaidDTO paymentDto,
             [FromServices] IValidator<MarkInvoiceAsPaidDTO> validator)
         {
+            if (validator is MarkInvoiceAsPaidValidator typedValidator)
+            {
+                typedValidator.SetInvoiceIdForPayment(id);
+            }
+
             // Manually validate with async support
             var validationResult = await validator.ValidateAsync(paymentDto);
             if (!validationResult.IsValid)

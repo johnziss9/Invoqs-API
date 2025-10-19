@@ -203,8 +203,19 @@ public class MarkInvoiceAsSentValidator : AbstractValidator<MarkInvoiceAsSentDTO
 
         RuleFor(x => x.SentDate)
             .NotNull().WithMessage("Sent date is required")
-            .LessThanOrEqualTo(DateTime.Today).WithMessage("Sent date cannot be in the future")
-            .GreaterThanOrEqualTo(DateTime.Today.AddDays(-30))
+            .Must(sentDate =>
+            {
+                var result = sentDate <= DateTime.UtcNow.Date;
+                return result;
+            })
+            .WithMessage("Sent date cannot be in the future")
+            .Must(sentDate =>
+            {
+                var thirtyDaysAgo = DateTime.UtcNow.Date.AddDays(-30);
+                var result = sentDate >= thirtyDaysAgo;
+
+                return result;
+            })
             .WithMessage("Sent date cannot be more than 30 days in the past");
 
         RuleFor(x => x)
@@ -240,8 +251,20 @@ public class MarkInvoiceAsPaidValidator : AbstractValidator<MarkInvoiceAsPaidDTO
 
         RuleFor(x => x.PaymentDate)
             .NotNull().WithMessage("Payment date is required")
-            .LessThanOrEqualTo(DateTime.Today).WithMessage("Payment date cannot be in the future")
-            .GreaterThanOrEqualTo(DateTime.Today.AddYears(-1))
+            .Must(paymentDate =>
+            {
+                var result = paymentDate <= DateTime.UtcNow.Date;
+
+                return result;
+            })
+            .WithMessage("Payment date cannot be in the future")
+            .Must(paymentDate =>
+            {
+                var oneYearAgo = DateTime.UtcNow.Date.AddYears(-1);
+                var result = paymentDate >= oneYearAgo;
+
+                return result;
+            })
             .WithMessage("Payment date cannot be more than 1 year in the past");
 
         RuleFor(x => x.PaymentMethod)
