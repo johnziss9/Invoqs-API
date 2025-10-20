@@ -30,8 +30,8 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceDTO>
             .MustAsync(BelongToCustomer).WithMessage("All jobs must belong to the selected customer");
 
         RuleFor(x => x.VatRate)
-            .InclusiveBetween(0m, 1m).WithMessage("VAT rate must be between 0% and 100%")
-            .PrecisionScale(6, 4, false).WithMessage("VAT rate cannot have more than 4 decimal places");
+            .InclusiveBetween(0m, 100m).WithMessage("VAT rate must be between 0% and 100%")
+            .PrecisionScale(5, 2, false).WithMessage("VAT rate cannot have more than 2 decimal places");
 
         RuleFor(x => x.PaymentTermsDays)
             .InclusiveBetween(1, 365).WithMessage("Payment terms must be between 1 and 365 days");
@@ -96,17 +96,21 @@ public class UpdateInvoiceValidator : AbstractValidator<UpdateInvoiceDTO>
             .MustAsync(BeValidCustomer).WithMessage("Selected customer does not exist")
             .MustAsync(NotChangeCustomerIfSent).WithMessage("Cannot change customer after invoice is sent");
 
-        RuleFor(x => x.JobIds)
-            .NotEmpty().WithMessage("At least one job must be selected")
-            .Must(x => x.Count <= 50).WithMessage("Cannot include more than 50 jobs in one invoice")
-            .MustAsync(BeValidJobs).WithMessage("One or more selected jobs do not exist")
-            .MustAsync(BeCompletedJobs).WithMessage("All jobs must be completed before invoicing")
-            .MustAsync(BeAvailableJobs).WithMessage("One or more jobs are invoiced elsewhere")
-            .MustAsync(BelongToCustomer).WithMessage("All jobs must belong to the selected customer");
+        // Only validate JobIds when they're provided (for job updates)
+        // When JobIds is null or empty, it means we're just updating invoice properties (VAT, notes, etc.)
+        When(x => x.JobIds != null && x.JobIds.Any(), () =>
+        {
+            RuleFor(x => x.JobIds)
+                .Must(x => x!.Count <= 50).WithMessage("Cannot include more than 50 jobs in one invoice")
+                .MustAsync(BeValidJobs!).WithMessage("One or more selected jobs do not exist")
+                .MustAsync(BeCompletedJobs!).WithMessage("All jobs must be completed before invoicing")
+                .MustAsync(BeAvailableJobs!).WithMessage("One or more jobs are invoiced elsewhere")
+                .MustAsync(BelongToCustomer!).WithMessage("All jobs must belong to the selected customer");
+        });
 
         RuleFor(x => x.VatRate)
-            .InclusiveBetween(0m, 1m).WithMessage("VAT rate must be between 0% and 100%")
-            .PrecisionScale(6, 4, false).WithMessage("VAT rate cannot have more than 4 decimal places");
+            .InclusiveBetween(0m, 100m).WithMessage("VAT rate must be between 0% and 100%")
+            .PrecisionScale(5, 2, false).WithMessage("VAT rate cannot have more than 2 decimal places");
 
         RuleFor(x => x.PaymentTermsDays)
             .InclusiveBetween(1, 365).WithMessage("Payment terms must be between 1 and 365 days");
@@ -169,7 +173,7 @@ public class UpdateInvoiceValidator : AbstractValidator<UpdateInvoiceDTO>
         // Jobs can be uninvoiced OR invoiced by the current invoice being updated
         var availableCount = await _context.Jobs
             .Where(j => jobIds.Contains(j.Id))
-            .CountAsync(j => !j.IsInvoiced || j.InvoiceId == _invoiceId, cancellationToken);
+            .CountAsync(j => j.InvoiceId == null || j.InvoiceId == _invoiceId, cancellationToken);
         return availableCount == jobIds.Count;
     }
 

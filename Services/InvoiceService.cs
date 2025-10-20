@@ -590,18 +590,30 @@ public class InvoiceService : IInvoiceService
         var year = DateTime.UtcNow.Year;
         var prefix = $"INV-{year}-";
 
-        var lastInvoice = await _context.Invoices
+        // Get all invoices for the current year
+        var yearInvoices = await _context.Invoices
+            .IgnoreQueryFilters()
             .Where(i => i.InvoiceNumber.StartsWith(prefix))
-            .OrderByDescending(i => i.InvoiceNumber)
-            .FirstOrDefaultAsync();
+            .Select(i => i.InvoiceNumber)
+            .ToListAsync();
 
         int nextNumber = 1;
-        if (lastInvoice != null)
+
+        if (yearInvoices.Any())
         {
-            var numberPart = lastInvoice.InvoiceNumber.Substring(prefix.Length);
-            if (int.TryParse(numberPart, out int lastNumber))
+            // Parse all invoice numbers and find the highest
+            var numbers = yearInvoices
+                .Select(invoiceNumber =>
+                {
+                    var numberPart = invoiceNumber.Substring(prefix.Length);
+                    return int.TryParse(numberPart, out int num) ? num : 0;
+                })
+                .Where(num => num > 0)
+                .ToList();
+
+            if (numbers.Any())
             {
-                nextNumber = lastNumber + 1;
+                nextNumber = numbers.Max() + 1;
             }
         }
 
@@ -634,7 +646,7 @@ public class InvoiceService : IInvoiceService
             _ => job.Type.ToString()
         };
 
-        return $"{typeDisplay} - {job.Title} at {job.Address}";
+        return $"{typeDisplay} - {job.Title}";
     }
 
     private static void CalculateInvoiceProperties(InvoiceDTO invoiceDTO)
