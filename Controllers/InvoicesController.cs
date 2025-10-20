@@ -138,6 +138,11 @@ namespace Invoqs.API.Controllers
             UpdateInvoiceDTO updateInvoiceDto,
             [FromServices] IValidator<UpdateInvoiceDTO> validator)
         {
+            if (validator is UpdateInvoiceValidator typedValidator)
+            {
+                typedValidator.SetInvoiceIdForUpdate(id);
+            }
+    
             // Manually validate with async support
             var validationResult = await validator.ValidateAsync(updateInvoiceDto);
             if (!validationResult.IsValid)
