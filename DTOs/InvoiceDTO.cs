@@ -30,6 +30,9 @@ public class InvoiceDTO
     public string CustomerEmail { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
 
+    public string Address { get; set; } = string.Empty; // Primary address or comma-separated if multiple
+    public List<string> Addresses { get; set; } = new(); // All unique addresses from line items
+
     // Line items
     public List<InvoiceLineItemDTO> LineItems { get; set; } = new();
 
@@ -89,6 +92,7 @@ public class InvoiceSummaryDTO
     public DateTime CreatedDate { get; set; }
     public DateTime? DueDate { get; set; }
     public bool IsOverdue { get; set; }
+    public string Address { get; set; } = string.Empty;
 }
 
 /// <summary>

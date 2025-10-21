@@ -14,6 +14,8 @@ public class InvoqsDbContext : DbContext
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceLineItem> InvoiceLineItems { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Receipt> Receipts { get; set; }
+    public DbSet<ReceiptInvoice> ReceiptInvoices { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -101,6 +103,33 @@ public class InvoqsDbContext : DbContext
             entity.Property(e => e.FirstName).HasMaxLength(50);
             entity.Property(e => e.LastName).HasMaxLength(50);
             entity.Property(e => e.PasswordHash).HasMaxLength(255);
+        });
+
+        // Receipt configuration
+        modelBuilder.Entity<Receipt>(entity =>
+        {
+            entity.HasQueryFilter(r => !r.IsDeleted);
+            
+            entity.HasOne(r => r.Customer)
+                .WithMany()
+                .HasForeignKey(r => r.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(r => r.ReceiptNumber).IsUnique();
+        });
+
+        // ReceiptInvoice configuration
+        modelBuilder.Entity<ReceiptInvoice>(entity =>
+        {
+            entity.HasOne(ri => ri.Receipt)
+                .WithMany(r => r.ReceiptInvoices)
+                .HasForeignKey(ri => ri.ReceiptId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ri => ri.Invoice)
+                .WithMany()
+                .HasForeignKey(ri => ri.InvoiceId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 
