@@ -4,6 +4,7 @@ using Invoqs.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
 using Invoqs.API.Validators;
+using static Invoqs.API.Validators.MarkInvoiceAsPaidValidator;
 
 namespace Invoqs.API.Controllers
 {
@@ -263,6 +264,56 @@ namespace Invoqs.API.Controllers
             {
                 _logger.LogError(ex, "Error marking invoice as sent for ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
                 return StatusCode(500, new { error = "An error occurred while marking the invoice as sent" });
+            }
+        }
+
+        /// <summary>
+        /// Mark invoice as delivered (hand-delivered to customer)
+        /// </summary>
+        [HttpPost("{id:int}/deliver")]
+        public async Task<ActionResult<InvoiceDTO>> MarkInvoiceAsDelivered(
+            int id,
+            MarkInvoiceAsDeliveredDTO deliveredDto,
+            [FromServices] IValidator<MarkInvoiceAsDeliveredDTO> validator)
+        {
+            if (validator is MarkInvoiceAsDeliveredValidator typedValidator)
+            {
+                typedValidator.SetInvoiceIdForDelivered(id);
+            }
+
+            // Manually validate with async support
+            var validationResult = await validator.ValidateAsync(deliveredDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        message = e.ErrorMessage
+                    })
+                });
+            }
+
+            try
+            {
+                var invoice = await _invoiceService.MarkInvoiceAsDeliveredAsync(id);
+                if (invoice == null)
+                {
+                    return NotFound($"Invoice with ID {id} not found");
+                }
+
+                return Ok(invoice);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Invoice delivery marking failed: {Error}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking invoice as delivered for ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while marking the invoice as delivered" });
             }
         }
 

@@ -223,8 +223,8 @@ public class MarkInvoiceAsSentValidator : AbstractValidator<MarkInvoiceAsSentDTO
             .WithMessage("Sent date cannot be more than 30 days in the past");
 
         RuleFor(x => x)
-            .MustAsync(BeInDraftStatus)
-            .WithMessage("Only draft invoices can be marked as sent")
+            .MustAsync(BeInDraftOrDeliveredStatus)
+            .WithMessage("Only draft or delivered invoices can be marked as sent")
             .WithName("Invoice");
     }
 
@@ -233,11 +233,11 @@ public class MarkInvoiceAsSentValidator : AbstractValidator<MarkInvoiceAsSentDTO
         _invoiceId = invoiceId;
     }
 
-    private async Task<bool> BeInDraftStatus(MarkInvoiceAsSentDTO dto, CancellationToken cancellationToken)
+    private async Task<bool> BeInDraftOrDeliveredStatus(MarkInvoiceAsSentDTO dto, CancellationToken cancellationToken)
     {
         var invoice = await _context.Invoices
             .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
-        return invoice?.Status == InvoiceStatus.Draft;
+        return invoice?.Status == InvoiceStatus.Draft || invoice?.Status == InvoiceStatus.Delivered;
     }
 }
 
@@ -282,7 +282,7 @@ public class MarkInvoiceAsPaidValidator : AbstractValidator<MarkInvoiceAsPaidDTO
 
         RuleFor(x => x)
             .MustAsync(BeInSentOrOverdueStatus)
-            .WithMessage("Only sent or overdue invoices can be marked as paid")
+            .WithMessage("Only sent, delivered, or overdue invoices can be marked as paid")
             .WithName("Invoice");
 
         RuleFor(x => x.PaymentDate)
@@ -309,7 +309,7 @@ public class MarkInvoiceAsPaidValidator : AbstractValidator<MarkInvoiceAsPaidDTO
     {
         var invoice = await _context.Invoices
             .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
-        return invoice?.Status is InvoiceStatus.Sent or InvoiceStatus.Overdue;
+        return invoice?.Status is InvoiceStatus.Sent or InvoiceStatus.Delivered or InvoiceStatus.Overdue;
     }
 
     private async Task<bool> BeAfterSentDate(DateTime paymentDate, CancellationToken cancellationToken)
@@ -320,5 +320,52 @@ public class MarkInvoiceAsPaidValidator : AbstractValidator<MarkInvoiceAsPaidDTO
         if (invoice?.SentDate == null) return true;
 
         return paymentDate >= invoice.SentDate.Value.Date;
+    }
+
+    /// <summary>
+    /// Validation rules for marking invoice as delivered
+    /// </summary>
+    public class MarkInvoiceAsDeliveredValidator : AbstractValidator<MarkInvoiceAsDeliveredDTO>
+    {
+        private readonly InvoqsDbContext _context;
+        private int _invoiceId;
+
+        public MarkInvoiceAsDeliveredValidator(InvoqsDbContext context)
+        {
+            _context = context;
+
+            RuleFor(x => x.DeliveredDate)
+                .NotNull().WithMessage("Delivered date is required")
+                .Must(deliveredDate =>
+                {
+                    var result = deliveredDate <= DateTime.UtcNow.Date;
+                    return result;
+                })
+                .WithMessage("Delivered date cannot be in the future")
+                .Must(deliveredDate =>
+                {
+                    var thirtyDaysAgo = DateTime.UtcNow.Date.AddDays(-30);
+                    var result = deliveredDate >= thirtyDaysAgo;
+                    return result;
+                })
+                .WithMessage("Delivered date cannot be more than 30 days in the past");
+
+            RuleFor(x => x)
+                .MustAsync(BeInDraftStatus)
+                .WithMessage("Only draft invoices can be marked as delivered")
+                .WithName("Invoice");
+        }
+
+        public void SetInvoiceIdForDelivered(int invoiceId)
+        {
+            _invoiceId = invoiceId;
+        }
+
+        private async Task<bool> BeInDraftStatus(MarkInvoiceAsDeliveredDTO dto, CancellationToken cancellationToken)
+        {
+            var invoice = await _context.Invoices
+                .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
+            return invoice?.Status == InvoiceStatus.Draft;
+        }
     }
 }
