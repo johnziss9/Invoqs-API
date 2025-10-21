@@ -425,14 +425,14 @@ public class InvoiceService : IInvoiceService
                 return null;
             }
 
-            var statusInt = (int)invoice.Status;
-            
-            if (invoice.Status != InvoiceStatus.Draft)
+            // Allow Draft OR Delivered invoices to be marked as sent
+            if (invoice.Status != InvoiceStatus.Draft && invoice.Status != InvoiceStatus.Delivered)
             {
-                throw new InvalidOperationException($"Only draft invoices can be marked as sent. Current status: {invoice.Status} ({statusInt})");
+                throw new InvalidOperationException($"Only draft or delivered invoices can be marked as sent. Current status: {invoice.Status}");
             }
 
             invoice.Status = InvoiceStatus.Sent;
+            invoice.IsSent = true;
             invoice.SentDate = DateTime.UtcNow;
             invoice.UpdatedDate = DateTime.UtcNow;
 
@@ -446,6 +446,47 @@ public class InvoiceService : IInvoiceService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error marking invoice as sent ID: {Id}", id);
+            throw;
+        }
+    }
+
+    public async Task<InvoiceDTO?> MarkInvoiceAsDeliveredAsync(int id)
+    {
+        _logger.LogInformation("Marking invoice as delivered ID: {Id}", id);
+
+        try
+        {
+            var invoice = await _context.Invoices
+                .Include(i => i.Customer)
+                .Include(i => i.LineItems)
+                    .ThenInclude(li => li.Job)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (invoice == null)
+            {
+                return null;
+            }
+
+            if (invoice.Status != InvoiceStatus.Draft)
+            {
+                throw new InvalidOperationException($"Only draft invoices can be marked as delivered. Current status: {invoice.Status}");
+            }
+
+            invoice.Status = InvoiceStatus.Delivered;
+            invoice.IsDelivered = true;
+            invoice.DeliveredDate = DateTime.UtcNow;
+            invoice.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
+
+            _logger.LogInformation("Marked invoice as delivered: {InvoiceNumber}", invoice.InvoiceNumber);
+            return invoiceDTO;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking invoice as delivered ID: {Id}", id);
             throw;
         }
     }
@@ -468,9 +509,11 @@ public class InvoiceService : IInvoiceService
                 return null;
             }
 
-            if (invoice.Status != InvoiceStatus.Sent && invoice.Status != InvoiceStatus.Overdue)
+            if (invoice.Status != InvoiceStatus.Sent &&
+                invoice.Status != InvoiceStatus.Delivered &&
+                invoice.Status != InvoiceStatus.Overdue)
             {
-                throw new InvalidOperationException("Only sent or overdue invoices can be marked as paid");
+                throw new InvalidOperationException("Only sent, delivered, or overdue invoices can be marked as paid");
             }
 
             invoice.Status = InvoiceStatus.Paid;

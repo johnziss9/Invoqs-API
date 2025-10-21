@@ -23,6 +23,9 @@ public class InvoiceDTO
     public DateTime CreatedDate { get; set; }
     public DateTime? UpdatedDate { get; set; }
     public DateTime? SentDate { get; set; }
+    public bool IsSent { get; set; }
+    public DateTime? DeliveredDate { get; set; }
+    public bool IsDelivered { get; set; }
     public DateTime? DueDate { get; set; }
 
     // Customer information (included in responses)
@@ -152,6 +155,14 @@ public class UpdateInvoiceDTO
 public class MarkInvoiceAsSentDTO
 {
     public DateTime? SentDate { get; set; } = DateTime.Today;
+}
+
+/// <summary>
+/// Data for marking invoice as delivered
+/// </summary>
+public class MarkInvoiceAsDeliveredDTO
+{
+    public DateTime? DeliveredDate { get; set; } = DateTime.Today;
 }
 
 /// <summary>

@@ -36,6 +36,9 @@ public class Invoice
     public DateTime CreatedDate { get; set; }
     public DateTime? UpdatedDate { get; set; }
     public DateTime? SentDate { get; set; }
+    public bool IsSent { get; set; } = false;
+    public DateTime? DeliveredDate { get; set; }
+    public bool IsDelivered { get; set; } = false;
     public DateTime? DueDate { get; set; }
     public bool IsDeleted { get; set; } = false;
 
