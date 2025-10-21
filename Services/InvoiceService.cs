@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using Invoqs.API.Data;
 using Invoqs.API.Models;
 using Invoqs.API.DTOs;
@@ -618,22 +617,6 @@ public class InvoiceService : IInvoiceService
         }
 
         return $"{prefix}{nextNumber:D4}";
-    }
-
-    private static decimal CalculateDefaultVatRate(IEnumerable<Job> jobs)
-    {
-        // 5% for skip rentals, 19% for others
-        var hasSkipRental = jobs.Any(j => j.Type == JobType.SkipRental);
-        var hasOtherTypes = jobs.Any(j => j.Type != JobType.SkipRental);
-
-        if (hasSkipRental && !hasOtherTypes)
-            return 5.0m;
-
-        if (hasOtherTypes && !hasSkipRental)
-            return 19.0m;
-
-        // Mixed types - use higher rate
-        return 19.0m;
     }
 
     private static string GetJobInvoiceDescription(Job job)

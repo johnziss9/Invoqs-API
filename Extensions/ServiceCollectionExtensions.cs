@@ -78,6 +78,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IPdfService, PdfService>();
+        services.AddScoped<IReceiptService, ReceiptService>();
 
         return services;
     }

@@ -15,6 +15,7 @@ public class MappingProfiles : Profile
         CreateJobMappings();
         CreateInvoiceMappings();
         CreateUserMappings();
+        CreateReceiptMappings();
     }
 
     private void CreateCustomerMappings()
@@ -96,6 +97,12 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
             .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
+            .ForMember(dest => dest.Addresses, opt => opt.MapFrom(src => 
+                src.LineItems.Where(li => li.Job != null && !string.IsNullOrWhiteSpace(li.Job.Address))
+                    .Select(li => li.Job.Address).Distinct().ToList()))
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
+                src.LineItems.Where(li => li.Job != null && !string.IsNullOrWhiteSpace(li.Job.Address))
+                    .Select(li => li.Job.Address).Distinct().FirstOrDefault() ?? ""))
             .ForMember(dest => dest.LineItems, opt => opt.MapFrom(src => src.LineItems));
 
         // Invoice Entity -> InvoiceSummaryDTO
@@ -105,7 +112,10 @@ public class MappingProfiles : Profile
                 src.Status != InvoiceStatus.Paid &&
                 src.Status != InvoiceStatus.Cancelled &&
                 src.DueDate.HasValue &&
-                DateTime.Today > src.DueDate.Value));
+                DateTime.Today > src.DueDate.Value))
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
+                src.LineItems.Where(li => li.Job != null && !string.IsNullOrWhiteSpace(li.Job.Address))
+                    .Select(li => li.Job.Address).Distinct().FirstOrDefault() ?? ""));
 
         // InvoiceLineItem Entity -> InvoiceLineItemDTO
         CreateMap<InvoiceLineItem, InvoiceLineItemDTO>()
@@ -138,6 +148,26 @@ public class MappingProfiles : Profile
         // User Entity -> UserDTO
         CreateMap<User, UserDTO>()
             .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}".Trim()));
+    }
+
+    private void CreateReceiptMappings()
+    {
+        // Receipt Entity -> ReceiptDTO
+        CreateMap<Receipt, ReceiptDTO>()
+            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
+            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
+            .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
+            .ForMember(dest => dest.Invoices, opt => opt.MapFrom(src => src.ReceiptInvoices));
+
+        // Receipt Entity -> ReceiptSummaryDTO
+        CreateMap<Receipt, ReceiptSummaryDTO>()
+            .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
+            .ForMember(dest => dest.InvoiceCount, opt => opt.MapFrom(src => src.ReceiptInvoices.Count));
+
+        // ReceiptInvoice Entity -> ReceiptInvoiceDTO
+        CreateMap<ReceiptInvoice, ReceiptInvoiceDTO>()
+            .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice.InvoiceNumber))
+            .ForMember(dest => dest.InvoiceDate, opt => opt.MapFrom(src => src.Invoice.CreatedDate));
     }
 }
 
