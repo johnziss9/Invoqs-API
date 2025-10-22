@@ -26,6 +26,7 @@ public class ReceiptService : IReceiptService
         try
         {
             var receipts = await _context.Receipts
+                .IgnoreQueryFilters()
                 .Include(r => r.Customer)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)

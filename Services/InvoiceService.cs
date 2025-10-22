@@ -27,9 +27,11 @@ public class InvoiceService : IInvoiceService
         try
         {
             var invoices = await _context.Invoices
+                .IgnoreQueryFilters()
                 .Include(i => i.Customer)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
+                .Where(i => !i.IsDeleted)
                 .OrderByDescending(i => i.CreatedDate)
                 .ToListAsync();
 
@@ -58,9 +60,11 @@ public class InvoiceService : IInvoiceService
         try
         {
             var invoice = await _context.Invoices
+                .IgnoreQueryFilters()
                 .Include(i => i.Customer)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
+                .Where(i => i.Id == id && !i.IsDeleted)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
             if (invoice == null)
@@ -89,10 +93,11 @@ public class InvoiceService : IInvoiceService
         try
         {
             var invoices = await _context.Invoices
+                .IgnoreQueryFilters()
                 .Include(i => i.Customer)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
-                .Where(i => i.CustomerId == customerId)
+                .Where(i => i.CustomerId == customerId && !i.IsDeleted)
                 .OrderByDescending(i => i.CreatedDate)
                 .ToListAsync();
 

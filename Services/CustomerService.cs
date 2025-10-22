@@ -181,26 +181,61 @@ public class CustomerService : ICustomerService
                 return false;
             }
 
-            // Check for active jobs
-            var activeJobs = customer.Jobs.Where(j => j.Status == JobStatus.Active).ToList();
-            if (activeJobs.Any())
+            // Get all non-deleted jobs
+            var jobs = customer.Jobs.ToList();
+
+            // If customer has jobs, they must ALL be invoiced and paid
+            if (jobs.Any())
             {
-                throw new InvalidOperationException($"Cannot delete customer with {activeJobs.Count} active jobs");
+                // Check for jobs that are NOT invoiced
+                var uninvoicedJobs = jobs.Where(j => !j.IsInvoiced).ToList();
+                if (uninvoicedJobs.Any())
+                {
+                    var jobStatuses = string.Join(", ", uninvoicedJobs.Select(j => $"{j.Status}"));
+                    throw new InvalidOperationException(
+                        $"Cannot delete customer with {uninvoicedJobs.Count} uninvoiced job(s) ({jobStatuses}). " +
+                        "All jobs must be invoiced and paid before customer deletion.");
+                }
+
+                // Get all unique invoice IDs from the customer's jobs
+                var jobInvoiceIds = jobs.Where(j => j.InvoiceId.HasValue)
+                                       .Select(j => j.InvoiceId!.Value)
+                                       .Distinct()
+                                       .ToList();
+
+                // Check if all invoices are paid
+                var unpaidInvoices = customer.Invoices
+                    .Where(i => jobInvoiceIds.Contains(i.Id) &&
+                               i.Status != InvoiceStatus.Paid)
+                    .ToList();
+
+                if (unpaidInvoices.Any())
+                {
+                    var invoiceStatuses = string.Join(", ", unpaidInvoices.Select(i => $"Invoice #{i.InvoiceNumber} ({i.Status})"));
+                    throw new InvalidOperationException(
+                        $"Cannot delete customer with {unpaidInvoices.Count} unpaid invoice(s): {invoiceStatuses}. " +
+                        "All invoices must be paid before customer deletion.");
+                }
             }
 
-            // Check for unsent invoices
-            var unsentInvoices = customer.Invoices.Where(i => i.Status == InvoiceStatus.Draft).ToList();
-            if (unsentInvoices.Any())
+            // Also check for any draft invoices not associated with jobs
+            var draftInvoices = customer.Invoices
+                .Where(i => i.Status == InvoiceStatus.Draft)
+                .ToList();
+
+            if (draftInvoices.Any())
             {
-                throw new InvalidOperationException($"Cannot delete customer with {unsentInvoices.Count} unsent invoices");
+                throw new InvalidOperationException(
+                    $"Cannot delete customer with {draftInvoices.Count} draft invoice(s). " +
+                    "Please delete or finalize all draft invoices first.");
             }
 
+            // All validations passed - safe to delete
             customer.IsDeleted = true;
             customer.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Soft deleted customer: {Name}", customer.Name);
             return true;
         }
         catch (Exception ex)

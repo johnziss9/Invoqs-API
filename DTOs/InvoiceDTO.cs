@@ -32,6 +32,9 @@ public class InvoiceDTO
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerEmail { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
+    public bool CustomerIsDeleted { get; set; }
+    public DateTime CustomerCreatedDate { get; set; }
+    public DateTime? CustomerUpdatedDate { get; set; }
 
     public string Address { get; set; } = string.Empty; // Primary address or comma-separated if multiple
     public List<string> Addresses { get; set; } = new(); // All unique addresses from line items

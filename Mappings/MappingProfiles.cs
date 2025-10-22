@@ -59,7 +59,11 @@ public class MappingProfiles : Profile
         // Job Entity -> JobDTO
         CreateMap<Job, JobDTO>()
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
-            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email));
+            .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted))
+            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
+            .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
+            .ForMember(dest => dest.CustomerCreatedDate, opt => opt.MapFrom(src => src.Customer.CreatedDate))
+            .ForMember(dest => dest.CustomerUpdatedDate, opt => opt.MapFrom(src => src.Customer.UpdatedDate));
 
         // Job Entity -> JobSummaryDTO
         CreateMap<Job, JobSummaryDTO>()
@@ -97,10 +101,13 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
             .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
-            .ForMember(dest => dest.Addresses, opt => opt.MapFrom(src => 
+            .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted))
+            .ForMember(dest => dest.CustomerCreatedDate, opt => opt.MapFrom(src => src.Customer.CreatedDate))
+            .ForMember(dest => dest.CustomerUpdatedDate, opt => opt.MapFrom(src => src.Customer.UpdatedDate))
+            .ForMember(dest => dest.Addresses, opt => opt.MapFrom(src =>
                 src.LineItems.Where(li => li.Job != null && !string.IsNullOrWhiteSpace(li.Job.Address))
                     .Select(li => li.Job.Address).Distinct().ToList()))
-            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
+            .ForMember(dest => dest.Address, opt => opt.MapFrom(src =>
                 src.LineItems.Where(li => li.Job != null && !string.IsNullOrWhiteSpace(li.Job.Address))
                     .Select(li => li.Job.Address).Distinct().FirstOrDefault() ?? ""))
             .ForMember(dest => dest.LineItems, opt => opt.MapFrom(src => src.LineItems));
@@ -155,6 +162,7 @@ public class MappingProfiles : Profile
         // Receipt Entity -> ReceiptDTO
         CreateMap<Receipt, ReceiptDTO>()
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
+            .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted)) 
             .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
             .ForMember(dest => dest.Invoices, opt => opt.MapFrom(src => src.ReceiptInvoices));
