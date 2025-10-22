@@ -38,7 +38,11 @@ public class JobDTO
 
     // Customer information (included in responses)
     public string CustomerName { get; set; } = string.Empty;
+    public bool CustomerIsDeleted { get; set; }
+    public string? CustomerPhone { get; set; }
     public string CustomerEmail { get; set; } = string.Empty;
+    public DateTime CustomerCreatedDate { get; set; }
+    public DateTime? CustomerUpdatedDate { get; set; }
 
     // Computed properties from Blazor model
     public string TypeDisplayName => Type switch

@@ -23,19 +23,20 @@ public class JobService : IJobService
 
     public async Task<IEnumerable<JobDTO>> GetAllJobsAsync()
     {
-        _logger.LogInformation("Getting all jobs");
-
         try
         {
             var jobs = await _context.Jobs
                 .Include(j => j.Customer)
                 .Include(j => j.Invoice)
+                .IgnoreQueryFilters()
+                .Where(j => !j.IsDeleted)
                 .OrderByDescending(j => j.CreatedDate)
-                .ProjectTo<JobDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            _logger.LogInformation("Retrieved {Count} jobs", jobs.Count);
-            return jobs;
+            // Map to DTOs after loading from database
+            var jobDtos = _mapper.Map<List<JobDTO>>(jobs);
+
+            return jobDtos;
         }
         catch (Exception ex)
         {
@@ -46,14 +47,14 @@ public class JobService : IJobService
 
     public async Task<JobDTO?> GetJobByIdAsync(int id)
     {
-        _logger.LogInformation("Getting job by ID: {Id}", id);
-
         try
         {
             var job = await _context.Jobs
+                .IgnoreQueryFilters()
                 .Include(j => j.Customer)
                 .Include(j => j.Invoice)
-                .FirstOrDefaultAsync(j => j.Id == id);
+                .Where(j => j.Id == id && !j.IsDeleted)
+                .FirstOrDefaultAsync();
 
             if (job == null)
             {
@@ -62,7 +63,6 @@ public class JobService : IJobService
             }
 
             var jobDTO = _mapper.Map<JobDTO>(job);
-            _logger.LogInformation("Retrieved job: {Title} for customer {CustomerName}", job.Title, job.Customer.Name);
             return jobDTO;
         }
         catch (Exception ex)
@@ -74,20 +74,19 @@ public class JobService : IJobService
 
     public async Task<IEnumerable<JobDTO>> GetJobsByCustomerIdAsync(int customerId)
     {
-        _logger.LogInformation("Getting jobs for customer ID: {CustomerId}", customerId);
-
         try
         {
             var jobs = await _context.Jobs
+                .IgnoreQueryFilters()
                 .Include(j => j.Customer)
                 .Include(j => j.Invoice)
-                .Where(j => j.CustomerId == customerId)
+                .Where(j => j.CustomerId == customerId && !j.IsDeleted)
                 .OrderByDescending(j => j.CreatedDate)
-                .ProjectTo<JobDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            _logger.LogInformation("Retrieved {Count} jobs for customer {CustomerId}", jobs.Count, customerId);
-            return jobs;
+            var jobDTOs = _mapper.Map<List<JobDTO>>(jobs);
+
+            return jobDTOs;
         }
         catch (Exception ex)
         {

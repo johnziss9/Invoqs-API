@@ -11,6 +11,7 @@ public class ReceiptDTO
     public string ReceiptNumber { get; set; } = string.Empty;
     public int CustomerId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
+    public bool CustomerIsDeleted { get; set; }
     public string CustomerEmail { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
     public DateTime PaymentDate { get; set; }
