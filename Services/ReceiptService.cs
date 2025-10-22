@@ -50,9 +50,11 @@ public class ReceiptService : IReceiptService
         try
         {
             var receipt = await _context.Receipts
+                .IgnoreQueryFilters()
                 .Include(r => r.Customer)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
+                .Where(r => !r.IsDeleted)
                 .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
 
             if (receipt == null)
