@@ -452,4 +452,32 @@ public class JobService : IJobService
             _ => false
         };
     }
+
+    public async Task<IEnumerable<string>> SearchAddressesAsync(string query)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            var addresses = await _context.Jobs
+                .Where(j => !j.IsDeleted && 
+                           !string.IsNullOrEmpty(j.Address) && 
+                           j.Address.ToLower().Contains(query.ToLower()))
+                .Select(j => j.Address.Trim())
+                .Distinct()
+                .OrderBy(a => a)
+                .Take(10)
+                .ToListAsync();
+
+            return addresses;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching addresses with query: {Query}", query);
+            throw;
+        }
+    }
 }

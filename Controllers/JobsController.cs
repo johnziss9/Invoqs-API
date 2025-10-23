@@ -123,6 +123,29 @@ namespace Invoqs.API.Controllers
         }
 
         /// <summary>
+        /// Search for addresses across all jobs (for autocomplete)
+        /// </summary>
+        [HttpGet("addresses/search")]
+        public async Task<ActionResult<IEnumerable<string>>> SearchAddresses([FromQuery] string query)
+        {
+            try
+            {                
+                if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+                {
+                    return Ok(Enumerable.Empty<string>());
+                }
+
+                var addresses = await _jobService.SearchAddressesAsync(query);
+                return Ok(addresses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching addresses for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while searching addresses" });
+            }
+        }
+
+        /// <summary>
         /// Get jobs for a specific invoice
         /// </summary>
         [HttpGet("invoice/{invoiceId:int}")]
