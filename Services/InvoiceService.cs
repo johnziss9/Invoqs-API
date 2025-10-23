@@ -430,13 +430,19 @@ public class InvoiceService : IInvoiceService
                 return null;
             }
 
-            // Allow Draft OR Delivered invoices to be marked as sent
-            if (invoice.Status != InvoiceStatus.Draft && invoice.Status != InvoiceStatus.Delivered)
+            var previousStatus = invoice.Status;
+
+            // Only change status to Sent if it's currently Draft or Delivered
+            if (invoice.Status == InvoiceStatus.Draft || invoice.Status == InvoiceStatus.Delivered)
             {
-                throw new InvalidOperationException($"Only draft or delivered invoices can be marked as sent. Current status: {invoice.Status}");
+                invoice.Status = InvoiceStatus.Sent;
+            }
+            else
+            {
+                _logger.LogInformation("Invoice {InvoiceNumber} already in {Status} status, keeping status (resend scenario)",
+                    invoice.InvoiceNumber, invoice.Status);
             }
 
-            invoice.Status = InvoiceStatus.Sent;
             invoice.IsSent = true;
             invoice.SentDate = DateTime.UtcNow;
             invoice.UpdatedDate = DateTime.UtcNow;
@@ -445,7 +451,6 @@ public class InvoiceService : IInvoiceService
 
             var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
 
-            _logger.LogInformation("Marked invoice as sent: {InvoiceNumber}", invoice.InvoiceNumber);
             return invoiceDTO;
         }
         catch (Exception ex)
