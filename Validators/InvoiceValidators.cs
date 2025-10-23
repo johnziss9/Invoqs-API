@@ -223,8 +223,8 @@ public class MarkInvoiceAsSentValidator : AbstractValidator<MarkInvoiceAsSentDTO
             .WithMessage("Sent date cannot be more than 30 days in the past");
 
         RuleFor(x => x)
-            .MustAsync(BeInDraftOrDeliveredStatus)
-            .WithMessage("Only draft or delivered invoices can be marked as sent")
+            .MustAsync(BeInDraftOrDeliveredOrSentOrOverdueStatus)
+            .WithMessage("Only draft, delivered, sent, or overdue invoices can be marked as sent")
             .WithName("Invoice");
     }
 
@@ -233,11 +233,14 @@ public class MarkInvoiceAsSentValidator : AbstractValidator<MarkInvoiceAsSentDTO
         _invoiceId = invoiceId;
     }
 
-    private async Task<bool> BeInDraftOrDeliveredStatus(MarkInvoiceAsSentDTO dto, CancellationToken cancellationToken)
+    private async Task<bool> BeInDraftOrDeliveredOrSentOrOverdueStatus(MarkInvoiceAsSentDTO dto, CancellationToken cancellationToken)
     {
         var invoice = await _context.Invoices
             .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
-        return invoice?.Status == InvoiceStatus.Draft || invoice?.Status == InvoiceStatus.Delivered;
+        return invoice?.Status == InvoiceStatus.Draft || 
+           invoice?.Status == InvoiceStatus.Delivered ||
+           invoice?.Status == InvoiceStatus.Sent ||
+           invoice?.Status == InvoiceStatus.Overdue;
     }
 }
 
