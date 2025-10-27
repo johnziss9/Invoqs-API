@@ -27,6 +27,8 @@ public class InvoiceDTO
     public DateTime? DeliveredDate { get; set; }
     public bool IsDelivered { get; set; }
     public DateTime? DueDate { get; set; }
+    public bool HasReceipt { get; set; }
+
 
     // Customer information (included in responses)
     public string CustomerName { get; set; } = string.Empty;
