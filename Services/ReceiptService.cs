@@ -136,9 +136,6 @@ public class ReceiptService : IReceiptService
             {
                 ReceiptNumber = await GenerateReceiptNumberAsync(),
                 CustomerId = createDTO.CustomerId,
-                PaymentDate = createDTO.PaymentDate,
-                PaymentMethod = createDTO.PaymentMethod,
-                PaymentReference = createDTO.PaymentReference,
                 CreatedDate = DateTime.UtcNow
             };
 

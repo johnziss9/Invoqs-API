@@ -272,9 +272,6 @@ public class PdfService : IPdfService
                 CustomerName = receiptEntity.Customer.Name,
                 CustomerEmail = receiptEntity.Customer.Email ?? "",
                 CustomerPhone = receiptEntity.Customer.Phone ?? "",
-                PaymentDate = receiptEntity.PaymentDate,
-                PaymentMethod = receiptEntity.PaymentMethod,
-                PaymentReference = receiptEntity.PaymentReference,
                 TotalAmount = receiptEntity.TotalAmount,
                 CreatedDate = receiptEntity.CreatedDate,
                 IsSent = receiptEntity.IsSent,
@@ -417,8 +414,6 @@ public class PdfService : IPdfService
                 });
 
                 table.Cell().Element(CellStyle).Text("1");
-                table.Cell().Element(CellStyle).Text(receipt.PaymentDate.ToString("dd/MM/yy"));
-                table.Cell().Element(CellStyle).Text($"- {receipt.PaymentMethod}");
                 table.Cell().Element(CellStyle).AlignRight().Text($"{receipt.TotalAmount:N2}");
 
                 static IContainer CellStyle(IContainer container)
