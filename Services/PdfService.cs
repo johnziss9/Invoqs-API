@@ -3,19 +3,20 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using Invoqs.API.Interfaces;
 using Invoqs.API.DTOs;
+using Invoqs.API.Data;
+using Microsoft.EntityFrameworkCore;
+using Invoqs.API.Models;
 
 namespace Invoqs.API.Services;
 
 public class PdfService : IPdfService
 {
-    private readonly IInvoiceService _invoiceService;
-    private readonly IReceiptService _receiptService;
+    private readonly InvoqsDbContext _context;
     private readonly ILogger<PdfService> _logger;
 
-    public PdfService(IInvoiceService invoiceService, IReceiptService receiptService, ILogger<PdfService> logger)
+    public PdfService(InvoqsDbContext context, ILogger<PdfService> logger)
     {
-        _invoiceService = invoiceService;
-        _receiptService = receiptService;
+        _context = context;
         _logger = logger;
     }
 
@@ -25,13 +26,50 @@ public class PdfService : IPdfService
 
         try
         {
-            // Fetch invoice data using existing service
-            var invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
+            // Fetch invoice data directly from database
+            var invoiceEntity = await _context.Invoices
+                .Include(i => i.Customer)
+                .Include(i => i.LineItems)
+                    .ThenInclude(li => li.Job)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted);
 
-            if (invoice == null)
+            if (invoiceEntity == null)
             {
                 throw new InvalidOperationException($"Invoice with ID {invoiceId} not found");
             }
+
+            // Map to DTO for PDF generation
+            var invoice = new InvoiceDTO
+            {
+                Id = invoiceEntity.Id,
+                InvoiceNumber = invoiceEntity.InvoiceNumber,
+                CustomerId = invoiceEntity.CustomerId,
+                CustomerName = invoiceEntity.Customer.Name,
+                CustomerEmail = invoiceEntity.Customer.Email ?? "",
+                CustomerPhone = invoiceEntity.Customer.Phone ?? "",
+                Subtotal = invoiceEntity.Subtotal,
+                VatRate = invoiceEntity.VatRate,
+                VatAmount = invoiceEntity.VatAmount,
+                Total = invoiceEntity.Total,
+                Status = invoiceEntity.Status,
+                PaymentTermsDays = invoiceEntity.PaymentTermsDays,
+                Notes = invoiceEntity.Notes,
+                CreatedDate = invoiceEntity.CreatedDate,
+                DueDate = invoiceEntity.DueDate,
+                LineItems = invoiceEntity.LineItems.Select(li => new InvoiceLineItemDTO
+                {
+                    Id = li.Id,
+                    InvoiceId = li.InvoiceId,
+                    JobId = li.JobId,
+                    Description = li.Description,
+                    Quantity = li.Quantity,
+                    UnitPrice = li.UnitPrice,
+                    LineTotal = li.LineTotal,
+                    JobTitle = li.Job?.Title ?? "",
+                    JobType = li.Job?.Type ?? JobType.SkipRental,
+                    JobAddress = li.Job?.Address ?? ""
+                }).ToList()
+            };
 
             // Generate PDF using QuestPDF
             var pdfBytes = Document.Create(container =>
@@ -213,12 +251,42 @@ public class PdfService : IPdfService
     {
         try
         {
-            var receipt = await _receiptService.GetReceiptByIdAsync(receiptId);
+            // Fetch receipt data directly from database
+            var receiptEntity = await _context.Receipts
+                .Include(r => r.Customer)
+                .Include(r => r.ReceiptInvoices)
+                    .ThenInclude(ri => ri.Invoice)
+                .FirstOrDefaultAsync(r => r.Id == receiptId && !r.IsDeleted);
 
-            if (receipt == null)
+            if (receiptEntity == null)
             {
                 throw new InvalidOperationException($"Receipt with ID {receiptId} not found");
             }
+
+            // Map to DTO for PDF generation
+            var receipt = new ReceiptDTO
+            {
+                Id = receiptEntity.Id,
+                ReceiptNumber = receiptEntity.ReceiptNumber,
+                CustomerId = receiptEntity.CustomerId,
+                CustomerName = receiptEntity.Customer.Name,
+                CustomerEmail = receiptEntity.Customer.Email ?? "",
+                CustomerPhone = receiptEntity.Customer.Phone ?? "",
+                PaymentDate = receiptEntity.PaymentDate,
+                PaymentMethod = receiptEntity.PaymentMethod,
+                PaymentReference = receiptEntity.PaymentReference,
+                TotalAmount = receiptEntity.TotalAmount,
+                CreatedDate = receiptEntity.CreatedDate,
+                IsSent = receiptEntity.IsSent,
+                SentDate = receiptEntity.SentDate,
+                Invoices = receiptEntity.ReceiptInvoices.Select(ri => new ReceiptInvoiceDTO
+                {
+                    InvoiceId = ri.InvoiceId,
+                    InvoiceNumber = ri.Invoice.InvoiceNumber,
+                    InvoiceDate = ri.Invoice.CreatedDate,
+                    AllocatedAmount = ri.AllocatedAmount
+                }).ToList()
+            };
 
             var pdfBytes = Document.Create(container =>
             {

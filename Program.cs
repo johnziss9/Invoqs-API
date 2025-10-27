@@ -10,6 +10,10 @@ QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 var connectionString = builder.Configuration.GetConnectionString("InvoqsDBConnection")
     ?? throw new InvalidOperationException("Connection string 'InvoqsDBConnection' not found.");
 
+// Configure EmailSettings
+builder.Services.Configure<Invoqs.API.Models.EmailSettings>(
+    builder.Configuration.GetSection("EmailSettings"));
+
 // Register services using extension methods
 builder.Services.AddDatabaseServices(builder.Configuration);
 builder.Services.AddValidationServices();
