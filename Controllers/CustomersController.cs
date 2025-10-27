@@ -3,6 +3,7 @@ using Invoqs.API.DTOs;
 using Invoqs.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using FluentValidation;
+using Invoqs.API.Validators;
 
 namespace Invoqs.API.Controllers
 {
@@ -114,6 +115,12 @@ namespace Invoqs.API.Controllers
             UpdateCustomerDTO updateCustomerDto,
             [FromServices] IValidator<UpdateCustomerDTO> validator)
         {
+            // Set the customer ID for the validator before validation runs
+            if (validator is UpdateCustomerValidator updateValidator)
+            {
+                updateValidator.SetCustomerIdForUpdate(id);
+            }
+    
             // Manually validate with async support
             var validationResult = await validator.ValidateAsync(updateCustomerDto);
             if (!validationResult.IsValid)

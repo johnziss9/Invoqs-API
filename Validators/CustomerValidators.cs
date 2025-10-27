@@ -134,9 +134,12 @@ public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerDTO>
     private async Task<bool> BeUniqueEmailForUpdate(string email, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(email))
-            return true; // Let the NotEmpty validator handle empty emails
+            return true;
 
         return !await _context.Customers
-            .AnyAsync(c => c.Email.ToLower() == email.ToLower() && c.Id != _customerId, cancellationToken);
+            .AnyAsync(c => c.Email.ToLower() == email.ToLower()
+                        && c.Id != _customerId
+                        && !c.IsDeleted,
+                        cancellationToken);
     }
 }
