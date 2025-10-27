@@ -133,11 +133,14 @@ public class CustomerService : ICustomerService
                 return null;
             }
 
+            var updatedEmail = updateDTO.Email?.Trim().ToLower() ?? "";
+            var currentEmail = customer.Email?.Trim().ToLower() ?? "";
+
             // Check if email already exists (excluding current customer)
-            if (updateDTO.Email.ToLower() != customer.Email.ToLower())
+            if (updatedEmail != currentEmail)
             {
                 var existingCustomer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.Email.ToLower() == updateDTO.Email.ToLower() && c.Id != id);
+                    .FirstOrDefaultAsync(c => c.Email.ToLower() == updatedEmail && c.Id != id && !c.IsDeleted);
 
                 if (existingCustomer != null)
                 {
