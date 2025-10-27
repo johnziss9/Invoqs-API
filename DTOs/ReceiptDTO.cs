@@ -14,9 +14,6 @@ public class ReceiptDTO
     public bool CustomerIsDeleted { get; set; }
     public string CustomerEmail { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
-    public DateTime PaymentDate { get; set; }
-    public string PaymentMethod { get; set; } = string.Empty;
-    public string? PaymentReference { get; set; }
     public decimal TotalAmount { get; set; }
     public DateTime CreatedDate { get; set; }
     public bool IsSent { get; set; }
@@ -35,8 +32,6 @@ public class ReceiptSummaryDTO
     public string ReceiptNumber { get; set; } = string.Empty;
     public int CustomerId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
-    public DateTime PaymentDate { get; set; }
-    public string PaymentMethod { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public int InvoiceCount { get; set; }
     public DateTime CreatedDate { get; set; }
@@ -61,10 +56,4 @@ public class CreateReceiptDTO
     public int CustomerId { get; set; }
 
     public List<int> InvoiceIds { get; set; } = new();
-
-    public DateTime PaymentDate { get; set; } = DateTime.Today;
-
-    public string PaymentMethod { get; set; } = "Bank Transfer";
-
-    public string? PaymentReference { get; set; }
 }

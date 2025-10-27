@@ -170,7 +170,7 @@ public class EmailService : IEmailService
                 _logger.LogInformation("Sending email attempt {Attempt} of {MaxRetries} to {Email}",
                     attempt, maxRetries, emailMessage.ToEmail);
 
-                var messageId = await SendEmailAsync(emailMessage);
+                var messageId = SendEmailAsync(emailMessage);
 
                 _logger.LogInformation("Email sent successfully to {Email}, MessageId: {MessageId}",
                     emailMessage.ToEmail, messageId);
@@ -203,7 +203,7 @@ public class EmailService : IEmailService
         };
     }
 
-    private async Task<string> SendEmailAsync(EmailMessageDto emailMessage)
+    private string SendEmailAsync(EmailMessageDto emailMessage)
     {
         try
         {
@@ -351,14 +351,6 @@ public class EmailService : IEmailService
                         <div class='detail-row'>
                             <span class='detail-label'>Receipt Number:</span>
                             <span class='detail-value'>{receipt.ReceiptNumber}</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Payment Date:</span>
-                            <span class='detail-value'>{receipt.PaymentDate:MMMM dd, yyyy}</span>
-                        </div>
-                        <div class='detail-row'>
-                            <span class='detail-label'>Payment Method:</span>
-                            <span class='detail-value'>{receipt.PaymentMethod}</span>
                         </div>
                         <div class='detail-row'>
                             <span class='detail-label'>Amount Paid:</span>

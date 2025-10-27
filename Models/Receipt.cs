@@ -10,12 +10,6 @@ public class Receipt
 
     public int CustomerId { get; set; }
 
-    public DateTime PaymentDate { get; set; }
-
-    public string PaymentMethod { get; set; } = "Bank Transfer";
-
-    public string? PaymentReference { get; set; }
-
     [Column(TypeName = "decimal(10,2)")]
     public decimal TotalAmount { get; set; }
 
