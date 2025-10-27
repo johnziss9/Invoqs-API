@@ -101,6 +101,8 @@ public class InvoiceService : IInvoiceService
                 .Include(i => i.Customer)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
+                .Include(i => i.ReceiptInvoices)
+                    .ThenInclude(ri => ri.Receipt)
                 .Where(i => i.CustomerId == customerId && !i.IsDeleted)
                 .OrderByDescending(i => i.CreatedDate)
                 .ToListAsync();

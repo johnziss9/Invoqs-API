@@ -127,7 +127,7 @@ public class InvoqsDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(ri => ri.Invoice)
-                .WithMany()
+                .WithMany(i => i.ReceiptInvoices)
                 .HasForeignKey(ri => ri.InvoiceId)
                 .OnDelete(DeleteBehavior.Restrict);
         });

@@ -110,7 +110,9 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.Address, opt => opt.MapFrom(src =>
                 src.LineItems.Where(li => li.Job != null && !string.IsNullOrWhiteSpace(li.Job.Address))
                     .Select(li => li.Job.Address).Distinct().FirstOrDefault() ?? ""))
-            .ForMember(dest => dest.LineItems, opt => opt.MapFrom(src => src.LineItems));
+            .ForMember(dest => dest.LineItems, opt => opt.MapFrom(src => src.LineItems))
+            .ForMember(dest => dest.HasReceipt, 
+                opt => opt.MapFrom(src => src.ReceiptInvoices.Any(ri => !ri.Receipt.IsDeleted)));
 
         // Invoice Entity -> InvoiceSummaryDTO
         CreateMap<Invoice, InvoiceSummaryDTO>()
