@@ -12,12 +12,16 @@ public class InvoiceService : IInvoiceService
     private readonly InvoqsDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<InvoiceService> _logger;
+    private readonly IEmailService _emailService;
+    private readonly IPdfService _pdfService;
 
-    public InvoiceService(InvoqsDbContext context, IMapper mapper, ILogger<InvoiceService> logger)
+    public InvoiceService(InvoqsDbContext context, IMapper mapper, ILogger<InvoiceService> logger, IEmailService emailService, IPdfService pdfService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _emailService = emailService;
+        _pdfService = pdfService;
     }
 
     public async Task<IEnumerable<InvoiceDTO>> GetAllInvoicesAsync()
@@ -430,6 +434,31 @@ public class InvoiceService : IInvoiceService
                 return null;
             }
 
+            // Fetch invoice DTO
+            var invoiceDTO = await GetInvoiceByIdAsync(id);
+            if (invoiceDTO == null)
+            {
+                _logger.LogWarning("Invoice not found: {Id}", id);
+                return null;
+            }
+
+            // Generate PDF
+            var pdfData = await _pdfService.GenerateInvoicePdfAsync(id);
+
+            // Send email BEFORE updating database
+            _logger.LogInformation("Attempting to send invoice email for Invoice ID: {Id}", id);
+            var emailResult = await _emailService.SendInvoiceEmailAsync(invoiceDTO, pdfData);
+
+            if (!emailResult.Success)
+            {
+                _logger.LogError("Failed to send invoice email for Invoice ID: {Id}. Error: {Error}",
+                    id, emailResult.ErrorMessage);
+                throw new InvalidOperationException($"Failed to send invoice email: {emailResult.ErrorMessage}");
+            }
+
+            _logger.LogInformation("Invoice email sent successfully for Invoice ID: {Id}, MessageId: {MessageId}",
+                id, emailResult.MessageId);
+
             var previousStatus = invoice.Status;
 
             // Only change status to Sent if it's currently Draft or Delivered
@@ -449,9 +478,11 @@ public class InvoiceService : IInvoiceService
 
             await _context.SaveChangesAsync();
 
-            var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
+            // Reload invoice DTO after database update
+            var updatedInvoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
 
-            return invoiceDTO;
+            _logger.LogInformation("Successfully marked invoice as sent: {InvoiceNumber}", invoice.InvoiceNumber);
+            return updatedInvoiceDTO;
         }
         catch (Exception ex)
         {
@@ -459,7 +490,7 @@ public class InvoiceService : IInvoiceService
             throw;
         }
     }
-
+    
     public async Task<InvoiceDTO?> MarkInvoiceAsDeliveredAsync(int id)
     {
         _logger.LogInformation("Marking invoice as delivered ID: {Id}", id);

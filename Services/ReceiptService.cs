@@ -13,12 +13,16 @@ public class ReceiptService : IReceiptService
     private readonly InvoqsDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<ReceiptService> _logger;
+    private readonly IEmailService _emailService;
+    private readonly IPdfService _pdfService;
 
-    public ReceiptService(InvoqsDbContext context, IMapper mapper, ILogger<ReceiptService> logger)
+    public ReceiptService(InvoqsDbContext context, IMapper mapper, ILogger<ReceiptService> logger, IEmailService emailService, IPdfService pdfService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _emailService = emailService;
+        _pdfService = pdfService;
     }
 
     public async Task<IEnumerable<ReceiptDTO>> GetAllReceiptsAsync()
@@ -220,6 +224,30 @@ public class ReceiptService : IReceiptService
                 return false;
             }
 
+            // Fetch receipt DTO
+            var receiptDTO = await GetReceiptByIdAsync(receiptId);
+            if (receiptDTO == null)
+            {
+                return false;
+            }
+
+            // Generate PDF
+            var pdfData = await _pdfService.GenerateReceiptPdfAsync(receiptId);
+
+            // Send email BEFORE updating database
+            _logger.LogInformation("Attempting to send receipt email for Receipt ID: {ReceiptId}", receiptId);
+            var emailResult = await _emailService.SendReceiptEmailAsync(receiptDTO, pdfData);
+
+            if (!emailResult.Success)
+            {
+                _logger.LogError("Failed to send receipt email for Receipt ID: {ReceiptId}. Error: {Error}",
+                    receiptId, emailResult.ErrorMessage);
+                return false;
+            }
+
+            _logger.LogInformation("Receipt email sent successfully for Receipt ID: {ReceiptId}, MessageId: {MessageId}",
+                receiptId, emailResult.MessageId);
+
             // Update receipt status
             receipt.IsSent = true;
             receipt.SentDate = DateTime.UtcNow;
@@ -227,8 +255,6 @@ public class ReceiptService : IReceiptService
 
             await _context.SaveChangesAsync();
 
-            // TODO: Implement actual email sending logic here
-            // For now, we just update the status
             _logger.LogInformation("Receipt {ReceiptNumber} marked as sent to {CustomerEmail}",
                 receipt.ReceiptNumber, receipt.Customer.Email);
 
