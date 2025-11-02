@@ -42,11 +42,11 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerDTO>
             .MaximumLength(50).WithMessage("Company registration number cannot exceed 50 characters")
             .When(x => !string.IsNullOrWhiteSpace(x.CompanyRegistrationNumber));
 
-        // VAT number validation (optional, UK format)
+        // VAT number validation (optional, Cyprus format)
         RuleFor(x => x.VatNumber)
             .MaximumLength(20).WithMessage("VAT number cannot exceed 20 characters")
-            .Matches(@"^[A-Z]{2}\d{8,12}$")
-            .WithMessage("VAT number format is invalid. Expected format: GB123456789 (2 letters followed by 8-12 digits)")
+            .Matches(@"^(CY)?\d{8}[A-Z]$")
+            .WithMessage("VAT number format is invalid. Expected format: 12345678L or CY12345678L (8 digits followed by 1 letter)")
             .When(x => !string.IsNullOrWhiteSpace(x.VatNumber));
 
         // Notes validation (optional)

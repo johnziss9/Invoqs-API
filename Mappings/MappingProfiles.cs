@@ -177,7 +177,9 @@ public class MappingProfiles : Profile
         // ReceiptInvoice Entity -> ReceiptInvoiceDTO
         CreateMap<ReceiptInvoice, ReceiptInvoiceDTO>()
             .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice.InvoiceNumber))
-            .ForMember(dest => dest.InvoiceDate, opt => opt.MapFrom(src => src.Invoice.CreatedDate));
+            .ForMember(dest => dest.InvoiceDate, opt => opt.MapFrom(src => src.Invoice.CreatedDate))
+            .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => src.Invoice.PaymentDate))
+            .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.Invoice.PaymentMethod));
     }
 }
 

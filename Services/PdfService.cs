@@ -281,7 +281,9 @@ public class PdfService : IPdfService
                     InvoiceId = ri.InvoiceId,
                     InvoiceNumber = ri.Invoice.InvoiceNumber,
                     InvoiceDate = ri.Invoice.CreatedDate,
-                    AllocatedAmount = ri.AllocatedAmount
+                    AllocatedAmount = ri.AllocatedAmount,
+                    PaymentDate = ri.Invoice.PaymentDate,
+                    PaymentMethod = ri.Invoice.PaymentMethod
                 }).ToList()
             };
 
@@ -414,6 +416,8 @@ public class PdfService : IPdfService
                 });
 
                 table.Cell().Element(CellStyle).Text("1");
+                table.Cell().Element(CellStyle).Text(receipt.CreatedDate.ToString("dd/MM/yy"));
+                table.Cell().Element(CellStyle).Text("Payment Received");
                 table.Cell().Element(CellStyle).AlignRight().Text($"{receipt.TotalAmount:N2}");
 
                 static IContainer CellStyle(IContainer container)
@@ -456,20 +460,22 @@ public class PdfService : IPdfService
                 {
                     table.ColumnsDefinition(columns =>
                     {
-                        columns.ConstantColumn(80);
-                        columns.RelativeColumn(1);
-                        columns.RelativeColumn(2);
-                        columns.RelativeColumn(3);
-                        columns.RelativeColumn(1);
+                        columns.ConstantColumn(40);   // #
+                        columns.RelativeColumn(1);    // Invoice Date
+                        columns.RelativeColumn(2);    // Invoice Number
+                        columns.RelativeColumn(1);    // Payment Date
+                        columns.RelativeColumn(1.5f); // Payment Method
+                        columns.RelativeColumn(1);    // Amount
                     });
 
                     table.Header(header =>
                     {
                         header.Cell().Element(CellStyle).Text("#").SemiBold();
-                        header.Cell().Element(CellStyle).Text("Reference Date").SemiBold();
+                        header.Cell().Element(CellStyle).Text("Invoice Date").SemiBold();
                         header.Cell().Element(CellStyle).Text("Invoice Number").SemiBold();
-                        header.Cell().Element(CellStyle).Text("Details").SemiBold();
-                        header.Cell().Element(CellStyle).AlignRight().Text("Allocated Amount").SemiBold();
+                        header.Cell().Element(CellStyle).Text("Payment Date").SemiBold();
+                        header.Cell().Element(CellStyle).Text("Payment Method").SemiBold();
+                        header.Cell().Element(CellStyle).AlignRight().Text("Amount").SemiBold();
 
                         static IContainer CellStyle(IContainer container)
                         {
@@ -480,7 +486,7 @@ public class PdfService : IPdfService
                     if (receipt.Invoices == null || !receipt.Invoices.Any())
                     {
                         _logger.LogWarning("No invoices to render in table!");
-                        table.Cell().ColumnSpan(5).Text("No invoices found").Italic();
+                        table.Cell().ColumnSpan(6).Text("No invoices found").Italic();
                     }
                     else
                     {
@@ -493,7 +499,8 @@ public class PdfService : IPdfService
                             table.Cell().Element(CellStyle).Text(rowNum.ToString());
                             table.Cell().Element(CellStyle).Text(invoice.InvoiceDate.ToString("dd/MM/yy"));
                             table.Cell().Element(CellStyle).Text(invoice.InvoiceNumber ?? "N/A");
-                            table.Cell().Element(CellStyle).Text("AM Sales Invoice");
+                            table.Cell().Element(CellStyle).Text(invoice.PaymentDate?.ToString("dd/MM/yy") ?? "-");
+                            table.Cell().Element(CellStyle).Text(invoice.PaymentMethod ?? "-");
                             table.Cell().Element(CellStyle).AlignRight().Text($"{invoice.AllocatedAmount:N2}");
                             rowNum++;
                         }
