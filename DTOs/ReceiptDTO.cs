@@ -46,6 +46,8 @@ public class ReceiptInvoiceDTO
     public string InvoiceNumber { get; set; } = string.Empty;
     public DateTime InvoiceDate { get; set; }
     public decimal AllocatedAmount { get; set; }
+    public DateTime? PaymentDate { get; set; }
+    public string? PaymentMethod { get; set; }
 }
 
 /// <summary>
