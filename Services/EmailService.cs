@@ -84,7 +84,7 @@ public class EmailService : IEmailService
             {
                 ToEmail = invoice.CustomerEmail,
                 ToName = invoice.CustomerName,
-                Subject = $"Invoice #{invoice.InvoiceNumber}",
+                Subject = $"Τιμολόγιο #{invoice.InvoiceNumber}",
                 HtmlBody = GenerateInvoiceEmailHtml(invoice),
                 AttachmentData = pdfData,
                 AttachmentFileName = $"Invoice_{invoice.InvoiceNumber}.pdf"
@@ -137,7 +137,7 @@ public class EmailService : IEmailService
             {
                 ToEmail = receipt.CustomerEmail,
                 ToName = receipt.CustomerName,
-                Subject = $"Payment Receipt #{receipt.ReceiptNumber}",
+                Subject = $"Απόδειξη Πληρωμής #{receipt.ReceiptNumber}",
                 HtmlBody = GenerateReceiptEmailHtml(receipt),
                 AttachmentData = pdfData,
                 AttachmentFileName = $"Receipt_{receipt.ReceiptNumber}.pdf"
@@ -281,37 +281,37 @@ public class EmailService : IEmailService
             </head>
             <body>
                 <div class='header'>
-                    <h1>Invoice from Invoqs</h1>
+                    <h1>Τιμολόγιο από Invoqs</h1>
                 </div>
                 <div class='content'>
-                    <p>Dear {invoice.CustomerName},</p>
-                    <p>Thank you for your business. Please find your invoice attached to this email.</p>
+                    <p>Αγαπητέ/ή {invoice.CustomerName},</p>
+                    <p>Σας ευχαριστούμε για την συνεργασία σας. Παρακαλώ βρείτε το τιμολόγιό σας συνημμένο σε αυτό το email.</p>
                     
                     <div class='invoice-details'>
                         <div class='detail-row'>
-                            <span class='detail-label'>Invoice Number:</span>
+                            <span class='detail-label'>Αριθμός Τιμολογίου:</span>
                             <span class='detail-value'>{invoice.InvoiceNumber}</span>
                         </div>
                         <div class='detail-row'>
-                            <span class='detail-label'>Invoice Date:</span>
+                            <span class='detail-label'>Ημερομηνία Τιμολογίου:</span>
                             <span class='detail-value'>{invoice.CreatedDate:MMMM dd, yyyy}</span>
                         </div>
                         <div class='detail-row'>
-                            <span class='detail-label'>Due Date:</span>
+                            <span class='detail-label'>Ημερομηνία Λήξης:</span>
                             <span class='detail-value'>{(invoice.DueDate.HasValue ? invoice.DueDate.Value.ToString("MMMM dd, yyyy") : "N/A")}</span>
                         </div>
                         <div class='detail-row'>
-                            <span class='detail-label'>Total Amount:</span>
-                            <span class='detail-value amount'>£{invoice.Total:N2}</span>
+                            <span class='detail-label'>Συνολικό Ποσό:</span>
+                            <span class='detail-value amount'>€{invoice.Total:N2}</span>
                         </div>
                     </div>
                     
-                    <p>If you have any questions about this invoice, please don't hesitate to contact us.</p>
-                    <p>Best regards,<br>The Invoqs Team</p>
+                    <p>Εάν έχετε οποιεσδήποτε ερωτήσεις σχετικά με αυτό το τιμολόγιο, μη διστάσετε να επικοινωνήσετε μαζί μας.</p>
+                    <p>Με εκτίμηση,<br>Η Ομάδα Invoqs</p>
                 </div>
                 <div class='footer'>
-                    <p>This is an automated email. Please do not reply directly to this message.</p>
-                    <p>&copy; {DateTime.Now.Year} Invoqs. All rights reserved.</p>
+                    <p>Αυτό είναι ένα αυτοματοποιημένο email. Παρακαλώ μην απαντήσετε απευθείας σε αυτό το μήνυμα.</p>
+                    <p>&copy; {DateTime.Now.Year} Invoqs. Με επιφύλαξη παντός δικαιώματος.</p>
                 </div>
             </body>
             </html>";
@@ -341,26 +341,26 @@ public class EmailService : IEmailService
             <body>
                 <div class='header'>
                     <div class='checkmark'>✓</div>
-                    <h1>Payment Received</h1>
+                    <h1>Πληρωμή Ληφθείσα</h1>
                 </div>
                 <div class='content'>
-                    <p>Dear {receipt.CustomerName},</p>
-                    <p>Thank you for your payment. This email confirms that we have received your payment.</p>
+                    <p>Αγαπητέ/ή {receipt.CustomerName},</p>
+                    <p>Σας ευχαριστούμε για την πληρωμή σας. Αυτό το email επιβεβαιώνει ότι έχουμε λάβει την πληρωμή σας.</p>
                     
                     <div class='receipt-details'>
                         <div class='detail-row'>
-                            <span class='detail-label'>Receipt Number:</span>
+                            <span class='detail-label'>Αριθμός Απόδειξης:</span>
                             <span class='detail-value'>{receipt.ReceiptNumber}</span>
                         </div>
                         <div class='detail-row'>
-                            <span class='detail-label'>Amount Paid:</span>
-                            <span class='detail-value amount'>£{receipt.TotalAmount:N2}</span>
+                            <span class='detail-label'>Ποσό που Πληρώθηκε:</span>
+                            <span class='detail-value amount'>€{receipt.TotalAmount:N2}</span>
                         </div>
                     </div>
                     
-                    <p>Your payment receipt is attached to this email for your records.</p>
-                    <p>Thank you for your business!</p>
-                    <p>Best regards,<br>The Invoqs Team</p>
+                    <p>Η απόδειξη πληρωμής σας είναι συνημμένη σε αυτό το email για τα αρχεία σας.</p>
+                    <p>Σας ευχαριστούμε για την συνεργασία σας!</p>
+                    <p>Με εκτίμηση,<br>Η Ομάδα Invoqs</p>
                 </div>
                 <div class='footer'>
                     <p>This is an automated email. Please do not reply directly to this message.</p>
