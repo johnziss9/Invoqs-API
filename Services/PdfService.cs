@@ -109,11 +109,11 @@ public class PdfService : IPdfService
         {
             row.RelativeItem().Column(column =>
             {
-                column.Item().Text("Your Company Name").FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
-                column.Item().Text("123 Business Street").FontSize(9);
-                column.Item().Text("City, Postcode").FontSize(9);
+                column.Item().Text("A. SAVVA SERVICES COMPANY LTD").FontSize(20).SemiBold().FontColor(Colors.Blue.Medium);
+                column.Item().Text("Ανδρέα Παναγίδη, 5").FontSize(9);
+                column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(9);
                 column.Item().Text("Phone: 01234 567890").FontSize(9);
-                column.Item().Text("Email: info@yourcompany.com").FontSize(9);
+                column.Item().Text("Email: antreasforklift@gmail.com").FontSize(9);
             });
 
             row.RelativeItem().AlignRight().Column(column =>
@@ -196,8 +196,8 @@ public class PdfService : IPdfService
                 {
                     table.Cell().Element(CellStyle).Text(item.Description ?? "Μ/Δ");
                     table.Cell().Element(CellStyle).AlignCenter().Text(item.Quantity.ToString());
-                    table.Cell().Element(CellStyle).AlignRight().Text($"£{item.UnitPrice:N2}");
-                    table.Cell().Element(CellStyle).AlignRight().Text($"£{item.LineTotal:N2}");
+                    table.Cell().Element(CellStyle).AlignRight().Text($"€{item.UnitPrice:N2}");
+                    table.Cell().Element(CellStyle).AlignRight().Text($"€{item.LineTotal:N2}");
 
                     static IContainer CellStyle(IContainer container)
                     {
@@ -247,7 +247,7 @@ public class PdfService : IPdfService
     }
 
     // Generate Receipt PDF with multiple invoices
-    public async Task<byte[]> GenerateReceiptPdfAsync(int receiptId)
+    public async Task<byte[]> GenerateReceiptPdfAsync(int receiptId, string userFirstName, string userLastName)
     {
         try
         {
@@ -272,6 +272,7 @@ public class PdfService : IPdfService
                 CustomerName = receiptEntity.Customer.Name,
                 CustomerEmail = receiptEntity.Customer.Email ?? "",
                 CustomerPhone = receiptEntity.Customer.Phone ?? "",
+                CustomerVatNumber = receiptEntity.Customer.VatNumber,
                 TotalAmount = receiptEntity.TotalAmount,
                 CreatedDate = receiptEntity.CreatedDate,
                 IsSent = receiptEntity.IsSent,
@@ -287,6 +288,10 @@ public class PdfService : IPdfService
                 }).ToList()
             };
 
+            var userFullName = $"{userFirstName} {userLastName}".Trim();
+            if (string.IsNullOrWhiteSpace(userFullName))
+                userFullName = "Unknown User";
+
             var pdfBytes = Document.Create(container =>
             {
                 container.Page(page =>
@@ -300,7 +305,7 @@ public class PdfService : IPdfService
                     page.Content().Element(container => ComposeReceiptContent(container, receipt));
                     page.Footer().AlignCenter().Text(x =>
                     {
-                        x.Span("Εκδόθηκε από: User Name • ");
+                        x.Span($"Εκδόθηκε από: {userFullName} • ");
                         x.Span(DateTime.UtcNow.ToString("dd/MM/yy HH:mm"));
                     });
                 });
@@ -321,17 +326,11 @@ public class PdfService : IPdfService
         {
             row.RelativeItem().Column(column =>
             {
-                column.Item().Text("Your Company Name").FontSize(16).SemiBold().FontColor(Colors.Blue.Medium);
-                column.Item().Text("123 Business Street").FontSize(8);
-                column.Item().Text("City, Postcode").FontSize(8);
+                column.Item().Text("A. SAVVA SERVICES COMPANY LTD").FontSize(16).SemiBold().FontColor(Colors.Blue.Medium);
+                column.Item().Text("Ανδρέα Παναγίδη, 5").FontSize(8);
+                column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(8);
                 column.Item().Text("Phone: 01234 567890").FontSize(8);
-                column.Item().Text("Email: accounts@yourcompany.com").FontSize(8);
-            });
-
-            row.RelativeItem().AlignRight().Column(column =>
-            {
-                column.Item().AlignRight().Text("Αριθμός Μητρώου ΦΠΑ.: 123456789").FontSize(8);
-                column.Item().AlignRight().Text("Αριθμός Άδειας Λατομείου.: ABC123").FontSize(8);
+                column.Item().Text("Email: antreasforklift@gmail.com").FontSize(8);
             });
         });
     }
@@ -369,21 +368,14 @@ public class PdfService : IPdfService
                         r.AutoItem().Width(120).Text("Ημερομηνία Απόδειξης:").SemiBold();
                         r.AutoItem().Text(receipt.CreatedDate.ToString("dd/MM/yy"));
                     });
-                    col.Item().Row(r =>
+                    if (!string.IsNullOrWhiteSpace(receipt.CustomerVatNumber))
                     {
-                        r.AutoItem().Width(120).Text("Αναφορά Λογαριασμού:").SemiBold();
-                        r.AutoItem().Text(receipt.CustomerId.ToString());
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.AutoItem().Width(120).Text("Αριθμός ΦΠΑ:").SemiBold();
-                        r.AutoItem().Text("123456789");
-                    });
-                    col.Item().Row(r =>
-                    {
-                        r.AutoItem().Width(120).Text("Αναφορά Ημερολογίου:").SemiBold();
-                        r.AutoItem().Text($"J{receipt.Id:D6}");
-                    });
+                        col.Item().Row(r =>
+                        {
+                            r.AutoItem().Width(120).Text("Αριθμός ΦΠΑ:").SemiBold();
+                            r.AutoItem().Text(receipt.CustomerVatNumber);
+                        });
+                    }
                 });
             });
 
@@ -418,7 +410,7 @@ public class PdfService : IPdfService
                 table.Cell().Element(CellStyle).Text("1");
                 table.Cell().Element(CellStyle).Text(receipt.CreatedDate.ToString("dd/MM/yy"));
                 table.Cell().Element(CellStyle).Text("Πληρωμή Ληφθείσα");
-                table.Cell().Element(CellStyle).AlignRight().Text($"{receipt.TotalAmount:N2}");
+                table.Cell().Element(CellStyle).AlignRight().Text($"€ {receipt.TotalAmount:N2}");
 
                 static IContainer CellStyle(IContainer container)
                 {
@@ -430,20 +422,29 @@ public class PdfService : IPdfService
             column.Item().PaddingTop(10).AlignRight().Column(summaryColumn =>
             {
                 summaryColumn.Item().Text("Ανάλυση Πληρωμής").FontSize(11).SemiBold();
-                summaryColumn.Item().Row(row =>
+
+                // Group invoices by payment method and sum allocated amounts
+                var paymentsByMethod = receipt.Invoices
+                    .GroupBy(i => i.PaymentMethod ?? "Μ/Δ")
+                    .Select(g => new { Method = g.Key, Total = g.Sum(i => i.AllocatedAmount) })
+                    .OrderByDescending(x => x.Total)
+                    .ToList();
+
+                // Display each payment method with its total
+                foreach (var payment in paymentsByMethod)
                 {
-                    row.AutoItem().Width(100).Text("Μετρητά");
-                    row.AutoItem().Text("0.00");
-                });
-                summaryColumn.Item().Row(row =>
-                {
-                    row.AutoItem().Width(100).Text("Άλλο").SemiBold();
-                    row.AutoItem().Text($"{receipt.TotalAmount:N2}").SemiBold();
-                });
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(100).Text(TranslatePaymentMethod(payment.Method));
+                        row.AutoItem().Text($"€ {payment.Total:N2}");
+                    });
+                }
+
+                // Total payment row
                 summaryColumn.Item().Row(row =>
                 {
                     row.AutoItem().Width(100).Text("Σύνολο Πληρωμής").FontSize(11).SemiBold();
-                    row.AutoItem().Text($"EUR {receipt.TotalAmount:N2}").FontSize(11).SemiBold();
+                    row.AutoItem().Text($"€ {receipt.TotalAmount:N2}").FontSize(11).SemiBold();
                 });
             });
 
@@ -500,8 +501,8 @@ public class PdfService : IPdfService
                             table.Cell().Element(CellStyle).Text(invoice.InvoiceDate.ToString("dd/MM/yy"));
                             table.Cell().Element(CellStyle).Text(invoice.InvoiceNumber ?? "Μ/Δ");
                             table.Cell().Element(CellStyle).Text(invoice.PaymentDate?.ToString("dd/MM/yy") ?? "-");
-                            table.Cell().Element(CellStyle).Text(invoice.PaymentMethod ?? "-");
-                            table.Cell().Element(CellStyle).AlignRight().Text($"{invoice.AllocatedAmount:N2}");
+                            table.Cell().Element(CellStyle).Text(TranslatePaymentMethod(invoice.PaymentMethod));
+                            table.Cell().Element(CellStyle).AlignRight().Text($"€ {invoice.AllocatedAmount:N2}");
                             rowNum++;
                         }
                     }
@@ -524,8 +525,23 @@ public class PdfService : IPdfService
             column.Item().PaddingTop(10).AlignRight().Row(row =>
             {
                 row.AutoItem().Width(120).Text("Κατανεμημένο Σύνολο").FontSize(11).SemiBold();
-                row.AutoItem().Text($"EUR {receipt.TotalAmount:N2}").FontSize(11).SemiBold();
+                row.AutoItem().Text($"€ {receipt.TotalAmount:N2}").FontSize(11).SemiBold();
             });
         });
+    }
+
+    private string TranslatePaymentMethod(string? method)
+    {
+        if (string.IsNullOrEmpty(method)) return "Μ/Δ";
+
+        return method switch
+        {
+            "Bank Transfer" => "Τραπεζική Μεταφορά",
+            "Cash" => "Μετρητά",
+            "Cheque" => "Επιταγή",
+            "Credit Card" => "Πιστωτική Κάρτα",
+            "Other" => "Άλλο",
+            _ => method // Return as-is if not found (in case it's already in Greek)
+        };
     }
 }

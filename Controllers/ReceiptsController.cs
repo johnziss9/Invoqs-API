@@ -130,18 +130,16 @@ namespace Invoqs.API.Controllers
         /// Download receipt as PDF
         /// </summary>
         [HttpGet("{id:int}/pdf")]
-        public async Task<IActionResult> GetReceiptPdf(int id)
+        public async Task<IActionResult> GetReceiptPdf(int id, [FromQuery] string userFirstName, [FromQuery] string userLastName)
         {
             try
             {
-                var pdfBytes = await _pdfService.GenerateReceiptPdfAsync(id);
-
+                var pdfBytes = await _pdfService.GenerateReceiptPdfAsync(id, userFirstName, userLastName);
                 // Get receipt to use receipt number in filename
                 var receipt = await _receiptService.GetReceiptByIdAsync(id);
                 var fileName = receipt != null
                     ? $"{receipt.ReceiptNumber}.pdf"
                     : $"Receipt-{id}.pdf";
-
                 return File(pdfBytes, "application/pdf", fileName);
             }
             catch (InvalidOperationException ex)
