@@ -229,7 +229,7 @@ public class ReceiptService : IReceiptService
             }
 
             // Generate PDF
-            var pdfData = await _pdfService.GenerateReceiptPdfAsync(receiptId);
+            var pdfData = await _pdfService.GenerateReceiptPdfAsync(receiptId, "System", "Generated");
 
             // Send email BEFORE updating database
             _logger.LogInformation("Attempting to send receipt email for Receipt ID: {ReceiptId}", receiptId);

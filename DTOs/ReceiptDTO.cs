@@ -14,6 +14,7 @@ public class ReceiptDTO
     public bool CustomerIsDeleted { get; set; }
     public string CustomerEmail { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
+    public string? CustomerVatNumber { get; set; }
     public decimal TotalAmount { get; set; }
     public DateTime CreatedDate { get; set; }
     public bool IsSent { get; set; }
