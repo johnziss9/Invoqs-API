@@ -40,6 +40,9 @@ public class Invoice
     public DateTime? DeliveredDate { get; set; }
     public bool IsDelivered { get; set; } = false;
     public DateTime? DueDate { get; set; }
+    public DateTime? CancelledDate { get; set; }
+    public string? CancellationReason { get; set; }
+    public string? CancellationNotes { get; set; }
     public bool IsDeleted { get; set; } = false;
 
     // Navigation properties
