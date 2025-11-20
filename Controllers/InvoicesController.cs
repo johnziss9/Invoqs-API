@@ -374,13 +374,13 @@ namespace Invoqs.API.Controllers
         /// Cancel invoice
         /// </summary>
         [HttpPost("{id:int}/cancel")]
-        public async Task<ActionResult<InvoiceDTO>> CancelInvoice(int id)
+        public async Task<ActionResult<InvoiceDTO>> CancelInvoice(int id, [FromBody] CancelInvoiceDTO? cancelDTO = null)
         {
             _logger.LogInformation("Cancelling invoice ID: {InvoiceId} for user {UserId}", id, User.Identity?.Name);
 
             try
             {
-                var invoice = await _invoiceService.CancelInvoiceAsync(id);
+                var invoice = await _invoiceService.CancelInvoiceAsync(id, cancelDTO);
                 if (invoice == null)
                 {
                     _logger.LogWarning("Invoice with ID {InvoiceId} not found for cancellation", id);

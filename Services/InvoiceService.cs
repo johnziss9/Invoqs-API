@@ -579,7 +579,7 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public async Task<InvoiceDTO?> CancelInvoiceAsync(int id)
+    public async Task<InvoiceDTO?> CancelInvoiceAsync(int id, CancelInvoiceDTO? cancelDTO = null)
     {
         _logger.LogInformation("Cancelling invoice ID: {Id}", id);
 
@@ -603,13 +603,17 @@ public class InvoiceService : IInvoiceService
             }
 
             invoice.Status = InvoiceStatus.Cancelled;
+            invoice.CancelledDate = cancelDTO?.CancelledDate ?? DateTime.UtcNow;
+            invoice.CancellationReason = cancelDTO?.CancellationReason;
+            invoice.CancellationNotes = cancelDTO?.CancellationNotes;
             invoice.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
             var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
 
-            _logger.LogInformation("Cancelled invoice: {InvoiceNumber}", invoice.InvoiceNumber);
+            _logger.LogInformation("Cancelled invoice: {InvoiceNumber} with reason: {Reason}", 
+                invoice.InvoiceNumber, invoice.CancellationReason ?? "Not specified");
             return invoiceDTO;
         }
         catch (Exception ex)

@@ -27,6 +27,9 @@ public class InvoiceDTO
     public DateTime? DeliveredDate { get; set; }
     public bool IsDelivered { get; set; }
     public DateTime? DueDate { get; set; }
+    public DateTime? CancelledDate { get; set; }
+    public string? CancellationReason { get; set; }
+    public string? CancellationNotes { get; set; }
     public bool HasReceipt { get; set; }
 
 
@@ -180,6 +183,16 @@ public class MarkInvoiceAsPaidDTO
     public string PaymentMethod { get; set; } = "Bank Transfer";
 
     public string? PaymentReference { get; set; }
+}
+
+/// <summary>
+/// Data for cancelling an invoice
+/// </summary>
+public class CancelInvoiceDTO
+{
+    public DateTime? CancelledDate { get; set; } = DateTime.Today;
+    public string? CancellationReason { get; set; }
+    public string? CancellationNotes { get; set; }
 }
 
 // /// <summary>
