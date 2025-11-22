@@ -602,6 +602,12 @@ public class InvoiceService : IInvoiceService
                 throw new InvalidOperationException("Paid invoices cannot be cancelled");
             }
 
+            // Store the previous status to determine if email should be sent
+            var previousStatus = invoice.Status;
+            var shouldSendEmail = previousStatus == InvoiceStatus.Sent || 
+                                previousStatus == InvoiceStatus.Delivered || 
+                                previousStatus == InvoiceStatus.Overdue;
+
             invoice.Status = InvoiceStatus.Cancelled;
             invoice.CancelledDate = cancelDTO?.CancelledDate ?? DateTime.UtcNow;
             invoice.CancellationReason = cancelDTO?.CancellationReason;
@@ -610,10 +616,46 @@ public class InvoiceService : IInvoiceService
 
             await _context.SaveChangesAsync();
 
+            // Get updated invoice DTO
             var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
+
+            // Send cancellation email if invoice was previously sent to customer
+            if (shouldSendEmail && invoiceDTO != null && !string.IsNullOrWhiteSpace(invoice.Customer?.Email))
+            {
+                _logger.LogInformation("Sending cancellation email for Invoice ID: {Id}", id);
+                
+                try
+                {
+                    var emailResult = await _emailService.SendInvoiceCancelledEmailAsync(invoiceDTO);
+                    
+                    if (emailResult.Success)
+                    {
+                        _logger.LogInformation("Cancellation email sent successfully for Invoice {InvoiceNumber}, MessageId: {MessageId}",
+                            invoice.InvoiceNumber, emailResult.MessageId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Cancellation successful but failed to send cancellation email for Invoice {InvoiceNumber}: {Error}",
+                            invoice.InvoiceNumber, emailResult.ErrorMessage);
+                        // Don't throw - cancellation was successful even if email failed
+                    }
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Error sending cancellation email for Invoice {InvoiceNumber}", 
+                        invoice.InvoiceNumber);
+                    // Don't throw - cancellation was successful even if email failed
+                }
+            }
+            else
+            {
+                _logger.LogInformation("Skipping cancellation email for Invoice {InvoiceNumber} - invoice was in {Status} status",
+                    invoice.InvoiceNumber, previousStatus);
+            }
 
             _logger.LogInformation("Cancelled invoice: {InvoiceNumber} with reason: {Reason}", 
                 invoice.InvoiceNumber, invoice.CancellationReason ?? "Not specified");
+            
             return invoiceDTO;
         }
         catch (Exception ex)
