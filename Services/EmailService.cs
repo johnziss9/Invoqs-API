@@ -370,6 +370,144 @@ public class EmailService : IEmailService
             </html>";
     }
 
+    public async Task<EmailResponseDto> SendInvoiceCancelledEmailAsync(InvoiceDTO invoice)
+    {
+        try
+        {
+            _logger.LogInformation("Starting to send invoice cancellation email for Invoice ID: {InvoiceId}", invoice.Id);
+
+            // Validate invoice
+            if (invoice == null)
+            {
+                _logger.LogWarning("Invoice is null");
+                return new EmailResponseDto
+                {
+                    Success = false,
+                    ErrorMessage = "Invoice not found"
+                };
+            }
+
+            // Validate customer has email
+            if (string.IsNullOrWhiteSpace(invoice.CustomerEmail))
+            {
+                _logger.LogWarning("Customer has no email address for Invoice ID: {InvoiceId}", invoice.Id);
+                return new EmailResponseDto
+                {
+                    Success = false,
+                    ErrorMessage = "Customer has no email address"
+                };
+            }
+
+            // Build email message
+            var emailMessage = new EmailMessageDto
+            {
+                ToEmail = invoice.CustomerEmail,
+                ToName = invoice.CustomerName,
+                Subject = $"Ακύρωση Τιμολογίου #{invoice.InvoiceNumber}",
+                HtmlBody = GenerateInvoiceCancelledEmailHtml(invoice)
+            };
+
+            // Send email with retry logic (no PDF attachment for cancellations)
+            return await SendEmailWithRetryAsync(emailMessage, 3);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send invoice cancellation email for Invoice ID: {InvoiceId}", invoice?.Id);
+            return new EmailResponseDto
+            {
+                Success = false,
+                ErrorMessage = $"Failed to send email: {ex.Message}"
+            };
+        }
+    }
+
+    private string GenerateInvoiceCancelledEmailHtml(InvoiceDTO invoice)
+    {
+        // Format cancellation reason and notes
+        var reasonSection = !string.IsNullOrWhiteSpace(invoice.CancellationReason)
+            ? $@"<div class='detail-row'>
+                    <span class='detail-label'>Λόγος Ακύρωσης:</span>
+                    <span class='detail-value'>{TranslateCancellationReason(invoice.CancellationReason)}</span>
+                </div>"
+            : "";
+
+        var notesSection = !string.IsNullOrWhiteSpace(invoice.CancellationNotes)
+            ? $@"<div class='notes-section'>
+                    <p class='notes-label'>Σημειώσεις:</p>
+                    <p class='notes-text'>{invoice.CancellationNotes}</p>
+                </div>"
+            : "";
+
+        return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #ef4444; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                    .content {{ background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }}
+                    .invoice-details {{ background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; }}
+                    .detail-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
+                    .detail-label {{ font-weight: bold; color: #6b7280; }}
+                    .detail-value {{ color: #111827; }}
+                    .amount {{ font-size: 24px; font-weight: bold; color: #ef4444; text-decoration: line-through; }}
+                    .footer {{ background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-radius: 0 0 8px 8px; }}
+                    .cancel-icon {{ font-size: 48px; color: white; }}
+                    .notes-section {{ background-color: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ef4444; }}
+                    .notes-label {{ font-weight: bold; color: #991b1b; margin: 0 0 8px 0; }}
+                    .notes-text {{ color: #7f1d1d; margin: 0; white-space: pre-wrap; }}
+                    .alert-box {{ background-color: #fee2e2; border: 1px solid #fecaca; padding: 15px; border-radius: 6px; margin: 20px 0; }}
+                    .alert-box p {{ margin: 0; color: #991b1b; }}
+                </style>
+            </head>
+            <body>
+                <div class='header'>
+                    <div class='cancel-icon'>✕</div>
+                    <h1>Ακύρωση Τιμολογίου</h1>
+                </div>
+                <div class='content'>
+                    <p>Αγαπητέ/ή {invoice.CustomerName},</p>
+                    <p>Σας ενημερώνουμε ότι το τιμολόγιο #{invoice.InvoiceNumber} έχει ακυρωθεί.</p>
+                    
+                    <div class='invoice-details'>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Αριθμός Τιμολογίου:</span>
+                            <span class='detail-value'>{invoice.InvoiceNumber}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Ημερομηνία Τιμολογίου:</span>
+                            <span class='detail-value'>{invoice.CreatedDate:dd/MM/yyyy}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Ημερομηνία Ακύρωσης:</span>
+                            <span class='detail-value'>{(invoice.CancelledDate.HasValue ? invoice.CancelledDate.Value.ToString("dd/MM/yyyy") : DateTime.UtcNow.ToString("dd/MM/yyyy"))}</span>
+                        </div>
+                        {reasonSection}
+                        <div class='detail-row'>
+                            <span class='detail-label'>Ποσό Τιμολογίου:</span>
+                            <span class='detail-value amount'>€{invoice.Total:N2}</span>
+                        </div>
+                    </div>
+                    
+                    {notesSection}
+                    
+                    <div class='alert-box'>
+                        <p><strong>Σημαντικό:</strong> Αυτό το τιμολόγιο δεν είναι πλέον έγκυρο και δεν απαιτείται πληρωμή.</p>
+                    </div>
+                    
+                    <p>Εάν έχετε οποιεσδήποτε ερωτήσεις σχετικά με αυτή την ακύρωση, μη διστάσετε να επικοινωνήσετε μαζί μας.</p>
+                    <p>Με εκτίμηση,<br>Η Ομάδα Invoqs</p>
+                </div>
+                <div class='footer'>
+                    <p>Αυτό είναι ένα αυτοματοποιημένο email. Παρακαλώ μην απαντήσετε απευθείας σε αυτό το μήνυμα.</p>
+                    <p>&copy; {DateTime.Now.Year} Invoqs. Με επιφύλαξη παντός δικαιώματος.</p>
+                </div>
+            </body>
+            </html>";
+    }
+
     private bool IsValidEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
@@ -384,5 +522,20 @@ public class EmailService : IEmailService
         {
             return false;
         }
+    }
+
+    private string TranslateCancellationReason(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason)) return "Δεν καθορίστηκε";
+
+        return reason switch
+        {
+            "Customer Request" => "Αίτημα Πελάτη",
+            "Service Not Completed" => "Υπηρεσία Δεν Ολοκληρώθηκε",
+            "Pricing Error" => "Λάθος Τιμολόγησης",
+            "Duplicate Invoice" => "Διπλό Τιμολόγιο",
+            "Other" => "Άλλο",
+            _ => reason // Return as-is if custom text or not found
+        };
     }
 }
