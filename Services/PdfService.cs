@@ -109,10 +109,10 @@ public class PdfService : IPdfService
         {
             row.RelativeItem(2).Column(column =>
             {
-                column.Item().Text("A. SAVVA SERVICES COMPANY LTD").FontSize(16).SemiBold().FontColor(Colors.Blue.Medium);
-                column.Item().Text("Ανδρέα Παναγίδη, 5").FontSize(9);
+                column.Item().Height(60).Image("wwwroot/images/company_logo.jpeg");
+                column.Item().PaddingTop(5).Text("Ανδρέα Παναγίδη, 5").FontSize(9);
                 column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(9);
-                column.Item().Text("Phone: 01234 567890").FontSize(9);
+                column.Item().Text("Phone: +357 99576190").FontSize(9);
                 column.Item().Text("Email: antreasforklift@gmail.com").FontSize(9);
                 column.Item().Text("ΑΦΜ: CY60172438U").FontSize(9);
             });
@@ -243,6 +243,8 @@ public class PdfService : IPdfService
             {
                 termsColumn.Item().Text("Όροι Πληρωμής:").SemiBold();
                 termsColumn.Item().Text($"Πληρωμή εντός {invoice.PaymentTermsDays} ημερών").FontSize(9);
+                termsColumn.Item().PaddingTop(5).Text("Στοιχεία Τράπεζας:").SemiBold();
+                termsColumn.Item().Text("IBAN: CY39 0050 0349 0003 4901 H993 7001").FontSize(9);
             });
         });
     }
@@ -327,10 +329,10 @@ public class PdfService : IPdfService
         {
             row.RelativeItem().Column(column =>
             {
-                column.Item().Text("A. SAVVA SERVICES COMPANY LTD").FontSize(16).SemiBold().FontColor(Colors.Blue.Medium);
-                column.Item().Text("Ανδρέα Παναγίδη, 5").FontSize(8);
+                column.Item().Height(60).Image("wwwroot/images/company_logo.jpeg");
+                column.Item().PaddingTop(5).Text("Ανδρέα Παναγίδη, 5").FontSize(8);
                 column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(8);
-                column.Item().Text("Phone: 01234 567890").FontSize(8);
+                column.Item().Text("Phone: +357 99576190").FontSize(8);
                 column.Item().Text("Email: antreasforklift@gmail.com").FontSize(8);
                 column.Item().Text("ΑΦΜ: CY60172438U").FontSize(8);
             });
