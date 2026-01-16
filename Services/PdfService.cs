@@ -244,6 +244,7 @@ public class PdfService : IPdfService
                 termsColumn.Item().Text("Όροι Πληρωμής:").SemiBold();
                 termsColumn.Item().Text($"Πληρωμή εντός {invoice.PaymentTermsDays} ημερών").FontSize(9);
                 termsColumn.Item().PaddingTop(5).Text("Στοιχεία Τράπεζας:").SemiBold();
+                termsColumn.Item().Text("Τράπεζα: Eurobank").FontSize(9);
                 termsColumn.Item().Text("IBAN: CY39 0050 0349 0003 4901 H993 7001").FontSize(9);
             });
         });
