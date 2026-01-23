@@ -20,7 +20,7 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerDTO>
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Customer name is required")
             .Length(2, 200).WithMessage("Customer name must be between 2 and 200 characters")
-            .Matches(@"^[a-zA-Z0-9\s\-\.\,\&\']+$")
+            .Matches(@"^[\p{L}\p{N}\s\-\.\,\&\']+$")
             .WithMessage("Customer name contains invalid characters. Only letters, numbers, spaces, hyphens, periods, commas, ampersands, and apostrophes are allowed");
 
         // Email validation with uniqueness check
@@ -84,7 +84,7 @@ public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerDTO>
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Customer name is required")
             .Length(2, 200).WithMessage("Customer name must be between 2 and 200 characters")
-            .Matches(@"^[a-zA-Z0-9\s\-\.\,\&\']+$")
+            .Matches(@"^[\p{L}\p{N}\s\-\.\,\&\']+$")
             .WithMessage("Customer name contains invalid characters. Only letters, numbers, spaces, hyphens, periods, commas, ampersands, and apostrophes are allowed");
 
         // Email validation with uniqueness check (excluding current customer)
