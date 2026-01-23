@@ -24,7 +24,7 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Job title is required")
             .Length(3, 200).WithMessage("Job title must be between 3 and 200 characters")
-            .Matches(@"^[a-zA-Z0-9\s\-\.\,\&\'\(\)\/]+$")
+            .Matches(@"^[\p{L}\p{N}\s\-\.\,\&\'\(\)\/]+$")
             .WithMessage("Job title contains invalid characters");
 
         RuleFor(x => x.Description)
@@ -160,7 +160,7 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Job title is required")
             .Length(3, 200).WithMessage("Job title must be between 3 and 200 characters")
-            .Matches(@"^[a-zA-Z0-9\s\-\.\,\&\'\(\)\/]+$")
+            .Matches(@"^[\p{L}\p{N}\s\-\.\,\&\'\(\)\/]+$")
             .WithMessage("Job title contains invalid characters");
 
         RuleFor(x => x.Description)
