@@ -15,17 +15,14 @@ public class CustomerDTO
     public DateTime CreatedDate { get; set; }
     public DateTime? UpdatedDate { get; set; }
 
-    // Computed properties from Blazor model
-    public int ActiveJobs { get; set; }
-    public int NewJobs { get; set; }
-    public int CompletedJobs { get; set; }
-    public int CancelledJobs { get; set; }
-    public decimal TotalRevenue { get; set; }
+    // Job and revenue statistics
+    public int TotalJobs { get; set; }
     public int UninvoicedJobs { get; set; }
+    public decimal TotalRevenue { get; set; }
+    
+    // Financial tracking
     public int UnpaidInvoices { get; set; }
     public decimal OutstandingAmount { get; set; }
-    public int TotalJobs => ActiveJobs + NewJobs + CompletedJobs + CancelledJobs;
-    public bool HasActiveWork => ActiveJobs > 0 || NewJobs > 0;
 }
 
 /// <summary>

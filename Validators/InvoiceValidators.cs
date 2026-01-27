@@ -25,7 +25,6 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceDTO>
             .NotEmpty().WithMessage("At least one job must be selected")
             .Must(x => x.Count <= 50).WithMessage("Cannot include more than 50 jobs in one invoice")
             .MustAsync(BeValidJobs).WithMessage("One or more selected jobs do not exist")
-            .MustAsync(BeCompletedJobs).WithMessage("All jobs must be completed before invoicing")
             .MustAsync(BeUninvoicedJobs).WithMessage("One or more jobs are already invoiced")
             .MustAsync(BelongToCustomer).WithMessage("All jobs must belong to the selected customer");
 
@@ -52,14 +51,6 @@ public class CreateInvoiceValidator : AbstractValidator<CreateInvoiceDTO>
         var existingCount = await _context.Jobs
             .CountAsync(j => jobIds.Contains(j.Id), cancellationToken);
         return existingCount == jobIds.Count;
-    }
-
-    private async Task<bool> BeCompletedJobs(List<int> jobIds, CancellationToken cancellationToken)
-    {
-        var completedCount = await _context.Jobs
-            .Where(j => jobIds.Contains(j.Id))
-            .CountAsync(j => j.Status == JobStatus.Completed, cancellationToken);
-        return completedCount == jobIds.Count;
     }
 
     private async Task<bool> BeUninvoicedJobs(List<int> jobIds, CancellationToken cancellationToken)
@@ -103,7 +94,6 @@ public class UpdateInvoiceValidator : AbstractValidator<UpdateInvoiceDTO>
             RuleFor(x => x.JobIds)
                 .Must(x => x!.Count <= 50).WithMessage("Cannot include more than 50 jobs in one invoice")
                 .MustAsync(BeValidJobs!).WithMessage("One or more selected jobs do not exist")
-                .MustAsync(BeCompletedJobs!).WithMessage("All jobs must be completed before invoicing")
                 .MustAsync(BeAvailableJobs!).WithMessage("One or more jobs are invoiced elsewhere")
                 .MustAsync(BelongToCustomer!).WithMessage("All jobs must belong to the selected customer");
         });
@@ -158,14 +148,6 @@ public class UpdateInvoiceValidator : AbstractValidator<UpdateInvoiceDTO>
         var existingCount = await _context.Jobs
             .CountAsync(j => jobIds.Contains(j.Id), cancellationToken);
         return existingCount == jobIds.Count;
-    }
-
-    private async Task<bool> BeCompletedJobs(List<int> jobIds, CancellationToken cancellationToken)
-    {
-        var completedCount = await _context.Jobs
-            .Where(j => jobIds.Contains(j.Id))
-            .CountAsync(j => j.Status == JobStatus.Completed, cancellationToken);
-        return completedCount == jobIds.Count;
     }
 
     private async Task<bool> BeAvailableJobs(List<int> jobIds, CancellationToken cancellationToken)

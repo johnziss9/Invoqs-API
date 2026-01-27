@@ -37,7 +37,6 @@ public class InvoqsDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.Status).HasConversion<int>();
             entity.Property(e => e.Type).HasConversion<int>();
 
             // Foreign key relationship

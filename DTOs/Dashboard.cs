@@ -31,14 +31,9 @@ public class RevenueMetricsDTO
 public class JobMetricsDTO
 {
     public int TotalJobs { get; set; }
-    public int ActiveJobs { get; set; }
-    public int CompletedJobs { get; set; }
-    public int NewJobs { get; set; }
-    public int CancelledJobs { get; set; }
-    public int JobsScheduledToday { get; set; }
-    public int JobsScheduledThisWeek { get; set; }
+    public int UninvoicedJobs { get; set; }
 
-    // Job type breakdown
+    // Job type breakdown (for all jobs)
     public int SkipRentals { get; set; }
     public int SandDeliveries { get; set; }
     public int ForkLiftServices { get; set; }

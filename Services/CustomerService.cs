@@ -194,9 +194,8 @@ public class CustomerService : ICustomerService
                 var uninvoicedJobs = jobs.Where(j => !j.IsInvoiced).ToList();
                 if (uninvoicedJobs.Any())
                 {
-                    var jobStatuses = string.Join(", ", uninvoicedJobs.Select(j => $"{j.Status}"));
                     throw new InvalidOperationException(
-                        $"Cannot delete customer with {uninvoicedJobs.Count} uninvoiced job(s) ({jobStatuses}). " +
+                        $"Cannot delete customer with {uninvoicedJobs.Count} uninvoiced job(s). " +
                         "All jobs must be invoiced and paid before customer deletion.");
                 }
 
@@ -330,20 +329,11 @@ public class CustomerService : ICustomerService
             // Calculate job statistics
             var jobs = customer.Jobs.Where(j => !j.IsDeleted).ToList();
 
-            customerDTO.ActiveJobs = jobs.Count(j => j.Status == JobStatus.Active);
-            customerDTO.NewJobs = jobs.Count(j => j.Status == JobStatus.New);
-            customerDTO.CompletedJobs = jobs.Count(j => j.Status == JobStatus.Completed);
-            customerDTO.CancelledJobs = jobs.Count(j => j.Status == JobStatus.Cancelled);
-            customerDTO.TotalRevenue = jobs
-                .Where(j => j.Status == JobStatus.Completed)
-                .Sum(j => j.Price);
+            customerDTO.TotalJobs = jobs.Count;
+            customerDTO.UninvoicedJobs = jobs.Count(j => !j.IsInvoiced);
+            customerDTO.TotalRevenue = jobs.Sum(j => j.Price);
 
-            // Calculate financial tracking statistics
-            customerDTO.UninvoicedJobs = jobs.Count(j => 
-                j.Status == JobStatus.Completed && 
-                (j.InvoiceId == null || j.InvoiceId == 0));
-
-            // Get invoices for this customer (need to load them)
+            // Get invoices for this customer
             var invoices = customer.Invoices.Where(i => !i.IsDeleted).ToList();
 
             customerDTO.UnpaidInvoices = invoices.Count(i => 
@@ -354,19 +344,16 @@ public class CustomerService : ICustomerService
                 .Where(i => i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.Overdue)
                 .Sum(i => i.Total);
 
-            _logger.LogDebug("Calculated statistics for customer {Id}: {ActiveJobs} active, {UninvoicedJobs} uninvoiced, {UnpaidInvoices} unpaid, £{Revenue} revenue",
-                customer.Id, customerDTO.ActiveJobs, customerDTO.UninvoicedJobs, customerDTO.UnpaidInvoices, customerDTO.TotalRevenue);
+            _logger.LogDebug("Calculated statistics for customer {Id}: {TotalJobs} total jobs, {UninvoicedJobs} uninvoiced, {UnpaidInvoices} unpaid, £{Revenue} revenue",
+                customer.Id, customerDTO.TotalJobs, customerDTO.UninvoicedJobs, customerDTO.UnpaidInvoices, customerDTO.TotalRevenue);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error calculating statistics for customer {Id}", customer.Id);
             // Set default values
-            customerDTO.ActiveJobs = 0;
-            customerDTO.NewJobs = 0;
-            customerDTO.CompletedJobs = 0;
-            customerDTO.CancelledJobs = 0;
-            customerDTO.TotalRevenue = 0;
+            customerDTO.TotalJobs = 0;
             customerDTO.UninvoicedJobs = 0;
+            customerDTO.TotalRevenue = 0;
             customerDTO.UnpaidInvoices = 0;
             customerDTO.OutstandingAmount = 0;
         }

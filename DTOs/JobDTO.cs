@@ -13,10 +13,8 @@ public class JobDTO
     public string? Description { get; set; }
     public string Address { get; set; } = string.Empty;
     public JobType Type { get; set; }
-    public JobStatus Status { get; set; }
     public decimal Price { get; set; }
-    public DateTime StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
+    public DateTime JobDate { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime? UpdatedDate { get; set; }
     public bool IsInvoiced { get; set; }
@@ -61,33 +59,6 @@ public class JobDTO
         _ => "bi-briefcase"
     };
 
-    public string StatusColor => Status switch
-    {
-        JobStatus.New => "primary",
-        JobStatus.Active => "warning",
-        JobStatus.Completed => "success",
-        JobStatus.Cancelled => "secondary",
-        _ => "secondary"
-    };
-
-    public string StatusIcon => Status switch
-    {
-        JobStatus.New => "bi-plus-circle",
-        JobStatus.Active => "bi-clock",
-        JobStatus.Completed => "bi-check-circle",
-        JobStatus.Cancelled => "bi-x-circle",
-        _ => "bi-circle"
-    };
-
-    public int DurationDays
-    {
-        get
-        {
-            var endDate = EndDate ?? DateTime.Now;
-            return Math.Max(1, (int)(endDate - StartDate).TotalDays + 1);
-        }
-    }
-
     public string ShortAddress
     {
         get
@@ -98,7 +69,7 @@ public class JobDTO
         }
     }
 
-    public bool CanBeInvoiced => Status == JobStatus.Completed && !IsInvoiced;
+    public bool CanBeInvoiced => !IsInvoiced;
 
     public decimal GetVatRate() => Type switch
     {
@@ -121,10 +92,8 @@ public class JobSummaryDTO
     public string Title { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
     public JobType Type { get; set; }
-    public JobStatus Status { get; set; }
     public decimal Price { get; set; }
-    public DateTime StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
+    public DateTime JobDate { get; set; }
     public bool IsInvoiced { get; set; }
     public string CustomerName { get; set; } = string.Empty;
 
@@ -152,13 +121,9 @@ public class CreateJobDTO
 
     public JobType Type { get; set; }
 
-    public JobStatus Status { get; set; } = JobStatus.New;
-
     public decimal Price { get; set; }
 
-    public DateTime StartDate { get; set; } = DateTime.Today.AddDays(1);
-
-    public DateTime? EndDate { get; set; }
+    public DateTime JobDate { get; set; } = DateTime.Today;
 
     // ===== JOB TYPE SPECIFIC FIELDS =====
     
@@ -191,13 +156,9 @@ public class UpdateJobDTO
 
     public JobType Type { get; set; }
 
-    public JobStatus Status { get; set; }
-
     public decimal Price { get; set; }
 
-    public DateTime StartDate { get; set; }
-
-    public DateTime? EndDate { get; set; }
+    public DateTime JobDate { get; set; }
 
     // ===== JOB TYPE SPECIFIC FIELDS =====
     
@@ -213,16 +174,6 @@ public class UpdateJobDTO
     
     // Forklift Service specific fields
     public string? ForkliftSize { get; set; }
-}
-
-/// <summary>
-/// Data for updating only job status
-/// </summary>
-public class UpdateJobStatusDTO
-{
-    public JobStatus Status { get; set; }
-
-    public DateTime? EndDate { get; set; }
 }
 
 /// <summary>

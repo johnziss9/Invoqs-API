@@ -140,7 +140,7 @@ public class InvoiceService : IInvoiceService
                 throw new InvalidOperationException($"Customer with ID {createDTO.CustomerId} does not exist");
             }
 
-            // Verify all jobs exist, are completed, uninvoiced, and belong to the customer
+            // Verify all jobs exist, uninvoiced, and belong to the customer
             var jobs = await _context.Jobs
                 .Where(j => createDTO.JobIds.Contains(j.Id))
                 .ToListAsync();
@@ -152,12 +152,11 @@ public class InvoiceService : IInvoiceService
 
             var invalidJobs = jobs.Where(j =>
                 j.CustomerId != createDTO.CustomerId ||
-                j.Status != JobStatus.Completed ||
                 j.InvoiceId.HasValue).ToList();
 
             if (invalidJobs.Any())
             {
-                throw new InvalidOperationException("All jobs must be completed, uninvoiced, and belong to the specified customer");
+                throw new InvalidOperationException("All jobs must be uninvoiced and belong to the specified customer");
             }
 
             // Create invoice
@@ -283,12 +282,11 @@ public class InvoiceService : IInvoiceService
 
                 var invalidJobs = newJobs.Where(j =>
                     j.CustomerId != invoice.CustomerId ||
-                    j.Status != JobStatus.Completed ||
                     j.InvoiceId.HasValue).ToList();
 
                 if (invalidJobs.Any())
                 {
-                    throw new InvalidOperationException("All jobs must be completed, uninvoiced, and belong to the invoice customer");
+                    throw new InvalidOperationException("All jobs must be uninvoiced and belong to the invoice customer");
                 }
 
                 // Create new line items
