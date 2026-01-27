@@ -97,25 +97,24 @@ public class JobService : IJobService
 
     public async Task<IEnumerable<JobDTO>> GetCompletedUnInvoicedJobsAsync(int customerId)
     {
-        _logger.LogInformation("Getting completed uninvoiced jobs for customer ID: {CustomerId}", customerId);
+        _logger.LogInformation("Getting uninvoiced jobs for customer ID: {CustomerId}", customerId);
 
         try
         {
             var jobs = await _context.Jobs
                 .Include(j => j.Customer)
                 .Where(j => j.CustomerId == customerId
-                         && j.Status == JobStatus.Completed
                          && j.InvoiceId == null)
-                .OrderBy(j => j.EndDate ?? j.StartDate)
+                .OrderBy(j => j.JobDate)
                 .ProjectTo<JobDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            _logger.LogInformation("Retrieved {Count} completed uninvoiced jobs for customer {CustomerId}", jobs.Count, customerId);
+            _logger.LogInformation("Retrieved {Count} uninvoiced jobs for customer {CustomerId}", jobs.Count, customerId);
             return jobs;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving completed uninvoiced jobs for customer ID: {CustomerId}", customerId);
+            _logger.LogError(ex, "Error retrieving uninvoiced jobs for customer ID: {CustomerId}", customerId);
             throw;
         }
     }
@@ -207,38 +206,9 @@ public class JobService : IJobService
                 return null;
             }
 
-            // Check if job is invoiced - only allow limited updates
-            if (job.InvoiceId.HasValue)
-            {
-                // Only allow status and end date updates for invoiced jobs
-                job.Status = updateDTO.Status;
-
-                if (updateDTO.Status == JobStatus.Completed && !job.EndDate.HasValue)
-                {
-                    job.EndDate = DateTime.UtcNow;
-                }
-                
-                job.UpdatedDate = DateTime.UtcNow;
-            }
-            else
-            {
-                // Full update for non-invoiced jobs
-                _mapper.Map(updateDTO, job);
-                
-                // Handle status-specific logic
-                job.Status = updateDTO.Status;
-
-                if (updateDTO.Status == JobStatus.Completed && !job.EndDate.HasValue)
-                {
-                    job.EndDate = DateTime.UtcNow;
-                }
-                else if (updateDTO.Status != JobStatus.Completed)
-                {
-                    job.EndDate = null; // Clear end date if not completed
-                }
-                
-                job.UpdatedDate = DateTime.UtcNow;
-            }
+            // Map all updates
+            _mapper.Map(updateDTO, job);
+            job.UpdatedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
@@ -250,57 +220,6 @@ public class JobService : IJobService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating job ID: {Id}", id);
-            throw;
-        }
-    }
-
-    public async Task<JobDTO?> UpdateJobStatusAsync(int id, UpdateJobStatusDTO statusDTO)
-    {
-        _logger.LogInformation("Updating job status ID: {Id} to {Status}", id, statusDTO.Status);
-
-        try
-        {
-            var job = await _context.Jobs
-                .Include(j => j.Customer)
-                .Include(j => j.Invoice)
-                .FirstOrDefaultAsync(j => j.Id == id);
-
-            if (job == null)
-            {
-                _logger.LogWarning("Job not found for status update with ID: {Id}", id);
-                return null;
-            }
-
-            // Validate status transition
-            if (!IsValidStatusTransition(job.Status, statusDTO.Status))
-            {
-                throw new InvalidOperationException($"Cannot change job status from {job.Status} to {statusDTO.Status}");
-            }
-
-            job.Status = statusDTO.Status;
-
-            // Handle completion
-            if (statusDTO.Status == JobStatus.Completed && !job.EndDate.HasValue)
-            {
-                job.EndDate = DateTime.UtcNow;
-            }
-            else if (statusDTO.Status != JobStatus.Completed)
-            {
-                job.EndDate = null; // Clear end date if reverting from completed
-            }
-
-            job.UpdatedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            var jobDTO = _mapper.Map<JobDTO>(job);
-
-            _logger.LogInformation("Updated job status: {Title} to {Status}", job.Title, statusDTO.Status);
-            return jobDTO;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating job status ID: {Id}", id);
             throw;
         }
     }
@@ -357,11 +276,11 @@ public class JobService : IJobService
                 throw new InvalidOperationException("One or more jobs not found");
             }
 
-            // Validate all jobs are completed and not already invoiced
-            var invalidJobs = jobs.Where(j => j.Status != JobStatus.Completed || j.InvoiceId.HasValue).ToList();
+            // Validate all jobs are not already invoiced
+            var invalidJobs = jobs.Where(j => j.InvoiceId.HasValue).ToList();
             if (invalidJobs.Any())
             {
-                throw new InvalidOperationException("All jobs must be completed and not already invoiced");
+                throw new InvalidOperationException("All jobs must not be already invoiced");
             }
 
             foreach (var job in jobs)
@@ -439,18 +358,6 @@ public class JobService : IJobService
             _logger.LogError(ex, "Error retrieving jobs for invoice ID: {InvoiceId}", invoiceId);
             throw;
         }
-    }
-
-    private static bool IsValidStatusTransition(JobStatus currentStatus, JobStatus newStatus)
-    {
-        return currentStatus switch
-        {
-            JobStatus.New => newStatus is JobStatus.Active or JobStatus.Cancelled,
-            JobStatus.Active => newStatus is JobStatus.Completed or JobStatus.Cancelled,
-            JobStatus.Completed => newStatus is JobStatus.Cancelled, // Can cancel completed jobs
-            JobStatus.Cancelled => false, // Cannot change from cancelled
-            _ => false
-        };
     }
 
     public async Task<IEnumerable<string>> SearchAddressesAsync(string query)

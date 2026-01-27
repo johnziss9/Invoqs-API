@@ -22,18 +22,17 @@ public class MappingProfiles : Profile
     {
         // Customer Entity -> CustomerDTO
         CreateMap<Customer, CustomerDTO>()
-            .ForMember(dest => dest.ActiveJobs, opt => opt.MapFrom(src =>
-                src.Jobs.Count(j => j.Status == JobStatus.Active)))
-            .ForMember(dest => dest.CompletedJobs, opt => opt.MapFrom(src =>
-                src.Jobs.Count(j => j.Status == JobStatus.Completed)))
+            .ForMember(dest => dest.TotalJobs, opt => opt.MapFrom(src => src.Jobs.Count))
+            .ForMember(dest => dest.UninvoicedJobs, opt => opt.MapFrom(src =>
+                src.Jobs.Count(j => !j.IsInvoiced)))
             .ForMember(dest => dest.TotalRevenue, opt => opt.MapFrom(src =>
-                src.Jobs.Where(j => j.Status == JobStatus.Completed).Sum(j => j.Price)));
+                src.Jobs.Sum(j => j.Price)));
 
         // Customer Entity -> CustomerSummaryDTO
         CreateMap<Customer, CustomerSummaryDTO>()
             .ForMember(dest => dest.TotalJobs, opt => opt.MapFrom(src => src.Jobs.Count))
             .ForMember(dest => dest.TotalRevenue, opt => opt.MapFrom(src =>
-                src.Jobs.Where(j => j.Status == JobStatus.Completed).Sum(j => j.Price)));
+                src.Jobs.Sum(j => j.Price)));
 
         // CreateCustomerDTO -> Customer Entity
         CreateMap<CreateCustomerDTO, Customer>()

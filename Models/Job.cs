@@ -15,13 +15,11 @@ public class Job
     public string Address { get; set; } = string.Empty;
 
     public JobType Type { get; set; }
-    public JobStatus Status { get; set; }
 
     [Column(TypeName = "decimal(10,2)")]
     public decimal Price { get; set; }
 
-    public DateTime StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
+    public DateTime JobDate { get; set; }
     public DateTime CreatedDate { get; set; }
     public DateTime? UpdatedDate { get; set; }
     public bool IsDeleted { get; set; } = false;

@@ -89,7 +89,7 @@ namespace Invoqs.API.Controllers
         }
 
         /// <summary>
-        /// Create a new invoice from completed jobs
+        /// Create a new invoice
         /// </summary>
         [HttpPost]
         public async Task<ActionResult<InvoiceDTO>> CreateInvoice(

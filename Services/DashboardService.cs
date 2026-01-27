@@ -44,9 +44,9 @@ public class DashboardService : IDashboardService
                 LastUpdated = DateTime.UtcNow
             };
 
-            _logger.LogInformation("Retrieved dashboard data: {CustomerCount} customers, {JobCount} active jobs, £{Revenue} weekly revenue",
+            _logger.LogInformation("Retrieved dashboard data: {CustomerCount} customers, {JobCount} total jobs, £{Revenue} weekly revenue",
                 dashboardData.CustomerMetrics.TotalCustomers,
-                dashboardData.JobMetrics.ActiveJobs,
+                dashboardData.JobMetrics.TotalJobs,
                 dashboardData.RevenueMetrics.WeeklyRevenue);
 
             return dashboardData;
@@ -67,9 +67,9 @@ public class DashboardService : IDashboardService
             var totalCustomers = customers.Count;
             var newCustomersThisWeek = customers.Count(c => c.CreatedDate >= oneWeekAgo);
 
-            // Calculate active customers (customers with active jobs)
-            var activeCustomerIds = await _context.Jobs
-                .Where(j => j.Status == JobStatus.Active)
+            // Calculate customers with uninvoiced work
+            var customersWithUninvoicedJobs = await _context.Jobs
+                .Where(j => !j.IsInvoiced)
                 .Select(j => j.CustomerId)
                 .Distinct()
                 .CountAsync();
@@ -77,7 +77,7 @@ public class DashboardService : IDashboardService
             return new CustomerMetricsDTO
             {
                 TotalCustomers = totalCustomers,
-                ActiveCustomers = activeCustomerIds,
+                ActiveCustomers = customersWithUninvoicedJobs,
                 NewCustomersThisWeek = newCustomersThisWeek
             };
         }
@@ -94,20 +94,17 @@ public class DashboardService : IDashboardService
         {
             var jobs = await _context.Jobs.ToListAsync();
 
-            var activeJobs = jobs.Where(j => j.Status == JobStatus.Active).ToList();
-            var jobsScheduledToday = jobs.Count(j => j.StartDate.Date == today && j.Status == JobStatus.New);
+            var uninvoicedJobs = jobs.Where(j => !j.IsInvoiced).ToList();
 
-            // Job breakdowns by type
-            var skipRentals = activeJobs.Count(j => j.Type == JobType.SkipRental);
-            var sandDeliveries = activeJobs.Count(j => j.Type == JobType.SandDelivery);
-            var forkLiftServices = activeJobs.Count(j => j.Type == JobType.ForkLiftService);
+            // Job breakdowns by type for all jobs
+            var skipRentals = jobs.Count(j => j.Type == JobType.SkipRental);
+            var sandDeliveries = jobs.Count(j => j.Type == JobType.SandDelivery);
+            var forkLiftServices = jobs.Count(j => j.Type == JobType.ForkLiftService);
 
             return new JobMetricsDTO
             {
-                ActiveJobs = activeJobs.Count,
-                JobsScheduledToday = jobsScheduledToday,
-                NewJobs = jobs.Count(j => j.Status == JobStatus.New),
-                CompletedJobs = jobs.Count(j => j.Status == JobStatus.Completed),
+                TotalJobs = jobs.Count,
+                UninvoicedJobs = uninvoicedJobs.Count,
                 SkipRentals = skipRentals,
                 SandDeliveries = sandDeliveries,
                 ForkLiftServices = forkLiftServices
@@ -157,18 +154,17 @@ public class DashboardService : IDashboardService
     {
         try
         {
-            // This week's revenue from completed jobs
+            // This week's revenue from jobs
             var thisWeekJobs = await _context.Jobs
-                .Where(j => j.Status == JobStatus.Completed && j.EndDate >= oneWeekAgo)
+                .Where(j => j.JobDate >= oneWeekAgo)
                 .ToListAsync();
 
             var thisWeekRevenue = thisWeekJobs.Sum(j => j.Price);
 
             // Previous week's revenue for comparison
             var previousWeekJobs = await _context.Jobs
-                .Where(j => j.Status == JobStatus.Completed &&
-                           j.EndDate >= twoWeeksAgo &&
-                           j.EndDate < oneWeekAgo)
+                .Where(j => j.JobDate >= twoWeeksAgo &&
+                           j.JobDate < oneWeekAgo)
                 .ToListAsync();
 
             var previousWeekRevenue = previousWeekJobs.Sum(j => j.Price);
@@ -187,13 +183,13 @@ public class DashboardService : IDashboardService
             // Monthly revenue
             var oneMonthAgo = DateTime.UtcNow.Date.AddDays(-30);
             var monthlyRevenue = await _context.Jobs
-                .Where(j => j.Status == JobStatus.Completed && j.EndDate >= oneMonthAgo)
+                .Where(j => j.JobDate >= oneMonthAgo)
                 .SumAsync(j => j.Price);
 
             // Yearly revenue
             var oneYearAgo = DateTime.UtcNow.Date.AddDays(-365);
             var yearlyRevenue = await _context.Jobs
-                .Where(j => j.Status == JobStatus.Completed && j.EndDate >= oneYearAgo)
+                .Where(j => j.JobDate >= oneYearAgo)
                 .SumAsync(j => j.Price);
 
             return new RevenueMetricsDTO

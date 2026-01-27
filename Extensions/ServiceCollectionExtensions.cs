@@ -41,7 +41,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UpdateCustomerValidator>();
         services.AddScoped<CreateJobValidator>();
         services.AddScoped<UpdateJobValidator>();
-        services.AddScoped<UpdateJobStatusValidator>();
         services.AddScoped<MarkJobsAsInvoicedValidator>();
         services.AddScoped<RemoveJobsFromInvoiceValidator>();
         services.AddScoped<CreateInvoiceValidator>();

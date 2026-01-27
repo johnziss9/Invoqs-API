@@ -38,29 +38,15 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
         RuleFor(x => x.Type)
             .IsInEnum().WithMessage("Please select a valid job type");
 
-        RuleFor(x => x.Status)
-            .IsInEnum().WithMessage("Please select a valid job status");
-
         RuleFor(x => x.Price)
             .GreaterThan(0).WithMessage("Price must be greater than £0")
             .LessThanOrEqualTo(999999.99m).WithMessage("Price cannot exceed £999,999.99")
             .PrecisionScale(8, 2, false).WithMessage("Price cannot have more than 2 decimal places");
 
-        RuleFor(x => x.StartDate)
-            .NotEmpty().WithMessage("Start date is required")
-            .GreaterThanOrEqualTo(DateTime.Today.AddDays(-30))
-            .WithMessage("Start date cannot be more than 30 days in the past");
-
-        RuleFor(x => x.EndDate)
-            .GreaterThanOrEqualTo(x => x.StartDate)
-            .WithMessage("End date must be on or after the start date")
-            .When(x => x.EndDate.HasValue);
-
-        // Business rule validations
-        RuleFor(x => x)
-            .Must(HaveEndDateWhenCompleted)
-            .WithMessage("End date is required when job status is Completed")
-            .WithName("EndDate");
+        RuleFor(x => x.JobDate)
+            .NotEmpty().WithMessage("Job date is required")
+            .LessThanOrEqualTo(DateTime.Today)
+            .WithMessage("Job date cannot be in the future");
 
         // ===== JOB TYPE SPECIFIC FIELD VALIDATIONS =====
 
@@ -104,15 +90,6 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
     {
         return await _context.Customers
             .AnyAsync(c => c.Id == customerId, cancellationToken);
-    }
-
-    private bool HaveEndDateWhenCompleted(CreateJobDTO job)
-    {
-        if (job.Status == JobStatus.Completed)
-        {
-            return job.EndDate.HasValue;
-        }
-        return true;
     }
 
     private bool BeValidSkipType(string? skipType)
@@ -174,32 +151,18 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
         RuleFor(x => x.Type)
             .IsInEnum().WithMessage("Please select a valid job type");
 
-        RuleFor(x => x.Status)
-            .IsInEnum().WithMessage("Please select a valid job status")
-            .MustAsync(BeValidStatusTransition).WithMessage("Invalid status transition for this job");
-
         RuleFor(x => x.Price)
             .GreaterThan(0).WithMessage("Price must be greater than £0")
             .LessThanOrEqualTo(999999.99m).WithMessage("Price cannot exceed £999,999.99")
             .PrecisionScale(8, 2, false).WithMessage("Price cannot have more than 2 decimal places")
             .MustAsync(BeEditableIfInvoiced).WithMessage("Cannot change price of invoiced job");
 
-        RuleFor(x => x.StartDate)
-            .NotEmpty().WithMessage("Start date is required")
-            .GreaterThanOrEqualTo(DateTime.Today.AddDays(-30))
-            .WithMessage("Start date cannot be more than 30 days in the past");
-
-        RuleFor(x => x.EndDate)
-            .GreaterThanOrEqualTo(x => x.StartDate)
-            .WithMessage("End date must be on or after the start date")
-            .When(x => x.EndDate.HasValue);
+        RuleFor(x => x.JobDate)
+            .NotEmpty().WithMessage("Job date is required")
+            .LessThanOrEqualTo(DateTime.Today)
+            .WithMessage("Job date cannot be in the future");
 
         // Business rule validations
-        RuleFor(x => x)
-            .Must(HaveEndDateWhenCompleted)
-            .WithMessage("End date is required when job status is Completed")
-            .WithName("EndDate");
-
         RuleFor(x => x)
             .MustAsync(NotBeInvoicedWhenChangingCriticalFields)
             .WithMessage("Cannot modify invoiced job details")
@@ -254,24 +217,6 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
             .AnyAsync(c => c.Id == customerId, cancellationToken);
     }
 
-    private async Task<bool> BeValidStatusTransition(JobStatus newStatus, CancellationToken cancellationToken)
-    {
-        var currentJob = await _context.Jobs
-            .FirstOrDefaultAsync(j => j.Id == _jobId, cancellationToken);
-
-        if (currentJob == null) return false;
-
-        // Define valid status transitions
-        return currentJob.Status switch
-        {
-            JobStatus.New => newStatus is JobStatus.New or JobStatus.Active or JobStatus.Cancelled,
-            JobStatus.Active => newStatus is JobStatus.Active or JobStatus.Completed or JobStatus.Cancelled,
-            JobStatus.Completed => newStatus is JobStatus.Completed or JobStatus.Active, // Allow reopening
-            JobStatus.Cancelled => newStatus is JobStatus.Cancelled or JobStatus.New, // Allow reactivation
-            _ => false
-        };
-    }
-
     private async Task<bool> BeEditableIfInvoiced(decimal price, CancellationToken cancellationToken)
     {
         var currentJob = await _context.Jobs
@@ -281,15 +226,6 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
 
         // If job is invoiced, price cannot be changed
         return currentJob.Price == price;
-    }
-
-    private bool HaveEndDateWhenCompleted(UpdateJobDTO job)
-    {
-        if (job.Status == JobStatus.Completed)
-        {
-            return job.EndDate.HasValue;
-        }
-        return true;
     }
 
     private async Task<bool> NotBeInvoicedWhenChangingCriticalFields(UpdateJobDTO jobDTO, CancellationToken cancellationToken)
@@ -334,27 +270,6 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
 }
 
 /// <summary>
-/// Validation rules for updating job status only
-/// </summary>
-public class UpdateJobStatusValidator : AbstractValidator<UpdateJobStatusDTO>
-{
-    public UpdateJobStatusValidator()
-    {
-        RuleFor(x => x.Status)
-            .IsInEnum().WithMessage("Please select a valid job status");
-
-        RuleFor(x => x.EndDate)
-            .NotNull().WithMessage("End date is required when marking job as completed")
-            .When(x => x.Status == JobStatus.Completed);
-
-        RuleFor(x => x.EndDate)
-            .GreaterThanOrEqualTo(DateTime.Today.AddDays(-7))
-            .WithMessage("End date cannot be more than 7 days in the past")
-            .When(x => x.EndDate.HasValue);
-    }
-}
-
-/// <summary>
 /// Validation rules for marking jobs as invoiced
 /// </summary>
 public class MarkJobsAsInvoicedValidator : AbstractValidator<MarkJobsAsInvoicedDTO>
@@ -375,7 +290,7 @@ public class MarkJobsAsInvoicedValidator : AbstractValidator<MarkJobsAsInvoicedD
             .MustAsync(BeValidInvoice).WithMessage("Selected invoice does not exist");
 
         RuleFor(x => x.JobIds)
-            .MustAsync(BeCompletedAndUninvoiced).WithMessage("All jobs must be completed and not already invoiced");
+            .MustAsync(BeCompletedAndUninvoiced).WithMessage("All jobs must not already invoiced");
     }
 
     private async Task<bool> BeValidJobs(List<int> jobIds, CancellationToken cancellationToken)
@@ -395,7 +310,7 @@ public class MarkJobsAsInvoicedValidator : AbstractValidator<MarkJobsAsInvoicedD
     {
         var invalidJobs = await _context.Jobs
             .Where(j => jobIds.Contains(j.Id))
-            .Where(j => j.Status != JobStatus.Completed || j.IsInvoiced)
+            .Where(j => j.IsInvoiced)
             .CountAsync(cancellationToken);
 
         return invalidJobs == 0;
