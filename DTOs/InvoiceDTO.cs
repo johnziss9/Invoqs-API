@@ -123,6 +123,7 @@ public class InvoiceLineItemDTO
     public string JobTitle { get; set; } = string.Empty;
     public JobType JobType { get; set; }
     public string JobAddress { get; set; } = string.Empty;
+    public DateTime? JobDate { get; set; }
 }
 
 /// <summary>

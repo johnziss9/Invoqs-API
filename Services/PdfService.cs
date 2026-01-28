@@ -67,7 +67,8 @@ public class PdfService : IPdfService
                     LineTotal = li.LineTotal,
                     JobTitle = li.Job?.Title ?? "",
                     JobType = li.Job?.Type ?? JobType.SkipRental,
-                    JobAddress = li.Job?.Address ?? ""
+                    JobAddress = li.Job?.Address ?? "",
+                    JobDate = li.Job?.JobDate
                 }).ToList()
             };
 
@@ -172,6 +173,7 @@ public class PdfService : IPdfService
                 table.ColumnsDefinition(columns =>
                 {
                     columns.RelativeColumn(3); // Description
+                    columns.RelativeColumn(1); // Date
                     columns.RelativeColumn(1); // Quantity
                     columns.RelativeColumn(1); // Unit Price
                     columns.RelativeColumn(1); // Total
@@ -181,6 +183,7 @@ public class PdfService : IPdfService
                 table.Header(header =>
                 {
                     header.Cell().Element(CellStyle).Text("Περιγραφή").SemiBold();
+                    header.Cell().Element(CellStyle).Text("Ημερομηνία").SemiBold();
                     header.Cell().Element(CellStyle).AlignCenter().Text("Ποσότητα").SemiBold();
                     header.Cell().Element(CellStyle).AlignRight().Text("Τιμή Μονάδας").SemiBold();
                     header.Cell().Element(CellStyle).AlignRight().Text("Σύνολο").SemiBold();
@@ -196,6 +199,7 @@ public class PdfService : IPdfService
                 foreach (var item in invoice.LineItems)
                 {
                     table.Cell().Element(CellStyle).Text(item.Description ?? "Μ/Δ");
+                    table.Cell().Element(CellStyle).Text(item.JobDate?.ToString("dd/MM/yy") ?? "Μ/Δ");
                     table.Cell().Element(CellStyle).AlignCenter().Text(item.Quantity.ToString());
                     table.Cell().Element(CellStyle).AlignRight().Text($"€{item.UnitPrice:N2}");
                     table.Cell().Element(CellStyle).AlignRight().Text($"€{item.LineTotal:N2}");
