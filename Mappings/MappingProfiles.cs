@@ -129,7 +129,8 @@ public class MappingProfiles : Profile
         CreateMap<InvoiceLineItem, InvoiceLineItemDTO>()
             .ForMember(dest => dest.JobTitle, opt => opt.MapFrom(src => src.Job.Title))
             .ForMember(dest => dest.JobType, opt => opt.MapFrom(src => src.Job.Type))
-            .ForMember(dest => dest.JobAddress, opt => opt.MapFrom(src => src.Job.Address));
+            .ForMember(dest => dest.JobAddress, opt => opt.MapFrom(src => src.Job.Address))
+            .ForMember(dest => dest.JobDate, opt => opt.MapFrom(src => src.Job.JobDate));
 
         // CreateInvoiceDTO -> Invoice Entity (will be handled in service layer)
         CreateMap<CreateInvoiceDTO, Invoice>()
