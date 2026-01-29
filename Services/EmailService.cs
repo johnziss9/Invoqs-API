@@ -307,7 +307,7 @@ public class EmailService : IEmailService
                     </div>
                     
                     <p>Εάν έχετε οποιεσδήποτε ερωτήσεις σχετικά με αυτό το τιμολόγιο, μη διστάσετε να επικοινωνήσετε μαζί μας.</p>
-                    <p>Με εκτίμηση,<br>Η Ομάδα Invoqs</p>
+                    <p>Με εκτίμηση,<br>ANDREAS SAVVA SERVICES COMPANY LTD</p>
                 </div>
                 <div class='footer'>
                     <p>Αυτό είναι ένα αυτοματοποιημένο email. Παρακαλώ μην απαντήσετε απευθείας σε αυτό το μήνυμα.</p>
@@ -360,7 +360,7 @@ public class EmailService : IEmailService
                     
                     <p>Η απόδειξη πληρωμής σας είναι συνημμένη σε αυτό το email για τα αρχεία σας.</p>
                     <p>Σας ευχαριστούμε για την συνεργασία σας!</p>
-                    <p>Με εκτίμηση,<br>Η Ομάδα Invoqs</p>
+                    <p>Με εκτίμηση,<br>ANDREAS SAVVA SERVICES COMPANY LTD</p>
                 </div>
                 <div class='footer'>
                     <p>This is an automated email. Please do not reply directly to this message.</p>
@@ -498,7 +498,7 @@ public class EmailService : IEmailService
                     </div>
                     
                     <p>Εάν έχετε οποιεσδήποτε ερωτήσεις σχετικά με αυτή την ακύρωση, μη διστάσετε να επικοινωνήσετε μαζί μας.</p>
-                    <p>Με εκτίμηση,<br>Η Ομάδα Invoqs</p>
+                    <p>Με εκτίμηση,<br>ANDREAS SAVVA SERVICES COMPANY LTD</p>
                 </div>
                 <div class='footer'>
                     <p>Αυτό είναι ένα αυτοματοποιημένο email. Παρακαλώ μην απαντήσετε απευθείας σε αυτό το μήνυμα.</p>
