@@ -96,8 +96,8 @@ namespace Invoqs.API.Controllers
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("email"))
             {
-                _logger.LogWarning("Customer creation failed - email already exists: {Email}", createCustomerDto.Email);
-                return Conflict(new { error = "Email address already exists", email = createCustomerDto.Email });
+                _logger.LogWarning("Customer creation failed - duplicate email in request");
+                return Conflict(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -150,8 +150,8 @@ namespace Invoqs.API.Controllers
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("email"))
             {
-                _logger.LogWarning("Customer update failed - email already exists: {Email}", updateCustomerDto.Email);
-                return Conflict(new { error = "Email address already exists", email = updateCustomerDto.Email });
+                _logger.LogWarning("Customer update failed - duplicate email in request");
+                return Conflict(new { error = ex.Message });
             }
             catch (Exception ex)
             {

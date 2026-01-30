@@ -29,6 +29,7 @@ public class PdfService : IPdfService
             // Fetch invoice data directly from database
             var invoiceEntity = await _context.Invoices
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .FirstOrDefaultAsync(i => i.Id == invoiceId && !i.IsDeleted);
@@ -45,7 +46,7 @@ public class PdfService : IPdfService
                 InvoiceNumber = invoiceEntity.InvoiceNumber,
                 CustomerId = invoiceEntity.CustomerId,
                 CustomerName = invoiceEntity.Customer.Name,
-                CustomerEmail = invoiceEntity.Customer.Email ?? "",
+                CustomerEmail = invoiceEntity.Customer.Emails.FirstOrDefault()?.Email ?? "",
                 CustomerPhone = invoiceEntity.Customer.Phone ?? "",
                 Subtotal = invoiceEntity.Subtotal,
                 VatRate = invoiceEntity.VatRate,
@@ -268,6 +269,7 @@ public class PdfService : IPdfService
             // Fetch receipt data directly from database
             var receiptEntity = await _context.Receipts
                 .Include(r => r.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
                 .FirstOrDefaultAsync(r => r.Id == receiptId && !r.IsDeleted);
@@ -284,7 +286,7 @@ public class PdfService : IPdfService
                 ReceiptNumber = receiptEntity.ReceiptNumber,
                 CustomerId = receiptEntity.CustomerId,
                 CustomerName = receiptEntity.Customer.Name,
-                CustomerEmail = receiptEntity.Customer.Email ?? "",
+                CustomerEmail = receiptEntity.Customer.Emails.FirstOrDefault()?.Email ?? "",
                 CustomerPhone = receiptEntity.Customer.Phone ?? "",
                 CustomerVatNumber = receiptEntity.Customer.VatNumber,
                 TotalAmount = receiptEntity.TotalAmount,

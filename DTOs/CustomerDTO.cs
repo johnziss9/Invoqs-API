@@ -7,7 +7,7 @@ public class CustomerDTO
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public List<CustomerEmailDTO> Emails { get; set; } = new();
     public string Phone { get; set; } = string.Empty;
     public string? CompanyRegistrationNumber { get; set; }
     public string? VatNumber { get; set; }
@@ -32,7 +32,7 @@ public class CustomerSummaryDTO
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public List<string> Emails { get; set; } = new();
     public string Phone { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public int TotalJobs { get; set; }
@@ -46,7 +46,7 @@ public class CreateCustomerDTO
 {
     public string Name { get; set; } = string.Empty;
 
-    public string Email { get; set; } = string.Empty;
+    public List<string> Emails { get; set; } = new();
 
     public string Phone { get; set; } = string.Empty;
 
@@ -64,7 +64,7 @@ public class UpdateCustomerDTO
 {
     public string Name { get; set; } = string.Empty;
 
-    public string Email { get; set; } = string.Empty;
+    public List<string> Emails { get; set; } = new();
 
     public string Phone { get; set; } = string.Empty;
 

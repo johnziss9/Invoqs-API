@@ -446,6 +446,7 @@ public class InvoiceService : IInvoiceService
             var pdfData = await _pdfService.GenerateInvoicePdfAsync(id);
 
             // Send email BEFORE updating database
+            // TODO: Phase 4 - Add email selection modal, for now use first email
             _logger.LogInformation("Attempting to send invoice email for Invoice ID: {Id}", id);
             var emailResult = await _emailService.SendInvoiceEmailAsync(invoiceDTO, pdfData);
 
@@ -618,7 +619,7 @@ public class InvoiceService : IInvoiceService
             var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
 
             // Send cancellation email if invoice was previously sent to customer
-            if (shouldSendEmail && invoiceDTO != null && !string.IsNullOrWhiteSpace(invoice.Customer?.Email))
+            if (shouldSendEmail && invoiceDTO != null && invoice.Customer?.Emails?.Any() == true)
             {
                 _logger.LogInformation("Sending cancellation email for Invoice ID: {Id}", id);
                 

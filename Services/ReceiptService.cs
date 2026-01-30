@@ -252,8 +252,8 @@ public class ReceiptService : IReceiptService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Receipt {ReceiptNumber} marked as sent to {CustomerEmail}",
-                receipt.ReceiptNumber, receipt.Customer.Email);
+            _logger.LogInformation("Receipt {ReceiptNumber} marked as sent to customer {CustomerId}",
+                receipt.ReceiptNumber, receipt.CustomerId);
 
             return true;
         }

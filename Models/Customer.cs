@@ -6,8 +6,6 @@ public class Customer
 
     public string Name { get; set; } = string.Empty;
 
-    public string Email { get; set; } = string.Empty;
-
     public string Phone { get; set; } = string.Empty;
 
     public string? CompanyRegistrationNumber { get; set; }
@@ -23,4 +21,5 @@ public class Customer
     // Navigation properties
     public virtual ICollection<Job> Jobs { get; set; } = new List<Job>();
     public virtual ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public virtual ICollection<CustomerEmail> Emails { get; set; } = new List<CustomerEmail>();
 }

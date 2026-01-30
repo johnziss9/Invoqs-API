@@ -23,12 +23,19 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerDTO>
             .Matches(@"^[\p{L}\p{N}\s\-\.\,\&\']+$")
             .WithMessage("Customer name contains invalid characters. Only letters, numbers, spaces, hyphens, periods, commas, ampersands, and apostrophes are allowed");
 
-        // Email validation with uniqueness check
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email address is required")
+        // Emails validation
+        RuleFor(x => x.Emails)
+            .NotEmpty().WithMessage("At least one email address is required")
+            .Must(emails => emails != null && emails.Count > 0)
+            .WithMessage("At least one email address is required");
+
+        RuleForEach(x => x.Emails)
+            .NotEmpty().WithMessage("Email address cannot be empty")
             .EmailAddress().WithMessage("Please enter a valid email address")
-            .MaximumLength(255).WithMessage("Email address cannot exceed 255 characters")
-            .MustAsync(BeUniqueEmail).WithMessage("This email address is already registered");
+            .MaximumLength(255).WithMessage("Email address cannot exceed 255 characters");
+
+        RuleFor(x => x.Emails)
+            .Must(HaveUniqueEmails).WithMessage("Duplicate email addresses are not allowed");
 
         // Phone number validation
         RuleFor(x => x.Phone)
@@ -56,15 +63,19 @@ public class CreateCustomerValidator : AbstractValidator<CreateCustomerDTO>
     }
 
     /// <summary>
-    /// Checks if the email address is unique across all customers
+    /// Checks that there are no duplicate emails in the list
     /// </summary>
-    private async Task<bool> BeUniqueEmail(string email, CancellationToken cancellationToken)
+    private bool HaveUniqueEmails(List<string>? emails)
     {
-        if (string.IsNullOrWhiteSpace(email))
-            return true; // Let the NotEmpty validator handle empty emails
+        if (emails == null || emails.Count == 0)
+            return true;
 
-        return !await _context.Customers
-            .AnyAsync(c => c.Email.ToLower() == email.ToLower(), cancellationToken);
+        var normalizedEmails = emails
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e.Trim().ToLower())
+            .ToList();
+
+        return normalizedEmails.Count == normalizedEmails.Distinct().Count();
     }
 }
 
@@ -87,12 +98,19 @@ public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerDTO>
             .Matches(@"^[\p{L}\p{N}\s\-\.\,\&\']+$")
             .WithMessage("Customer name contains invalid characters. Only letters, numbers, spaces, hyphens, periods, commas, ampersands, and apostrophes are allowed");
 
-        // Email validation with uniqueness check (excluding current customer)
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email address is required")
+        // Emails validation
+        RuleFor(x => x.Emails)
+            .NotEmpty().WithMessage("At least one email address is required")
+            .Must(emails => emails != null && emails.Count > 0)
+            .WithMessage("At least one email address is required");
+
+        RuleForEach(x => x.Emails)
+            .NotEmpty().WithMessage("Email address cannot be empty")
             .EmailAddress().WithMessage("Please enter a valid email address")
-            .MaximumLength(255).WithMessage("Email address cannot exceed 255 characters")
-            .MustAsync(BeUniqueEmailForUpdate).WithMessage("This email address is already registered to another customer");
+            .MaximumLength(255).WithMessage("Email address cannot exceed 255 characters");
+
+        RuleFor(x => x.Emails)
+            .Must(HaveUniqueEmails).WithMessage("Duplicate email addresses are not allowed");
 
         // Phone number validation
         RuleFor(x => x.Phone)
@@ -129,17 +147,18 @@ public class UpdateCustomerValidator : AbstractValidator<UpdateCustomerDTO>
     }
 
     /// <summary>
-    /// Checks if the email address is unique across all customers except the current one being updated
+    /// Checks that there are no duplicate emails in the list
     /// </summary>
-    private async Task<bool> BeUniqueEmailForUpdate(string email, CancellationToken cancellationToken)
+    private bool HaveUniqueEmails(List<string>? emails)
     {
-        if (string.IsNullOrWhiteSpace(email))
+        if (emails == null || emails.Count == 0)
             return true;
 
-        return !await _context.Customers
-            .AnyAsync(c => c.Email.ToLower() == email.ToLower()
-                        && c.Id != _customerId
-                        && !c.IsDeleted,
-                        cancellationToken);
+        var normalizedEmails = emails
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Select(e => e.Trim().ToLower())
+            .ToList();
+
+        return normalizedEmails.Count == normalizedEmails.Distinct().Count();
     }
 }

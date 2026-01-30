@@ -10,6 +10,7 @@ public class InvoqsDbContext : DbContext
     }
 
     public DbSet<Customer> Customers { get; set; }
+    public DbSet<CustomerEmail> CustomerEmails { get; set; }
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceLineItem> InvoiceLineItems { get; set; }
@@ -25,11 +26,26 @@ public class InvoqsDbContext : DbContext
         modelBuilder.Entity<Customer>(entity =>
         {
             entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             // Soft delete global query filter
             entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // Configure CustomerEmail entity
+        modelBuilder.Entity<CustomerEmail>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            
+            // Foreign key relationship
+            entity.HasOne(ce => ce.Customer)
+                  .WithMany(c => c.Emails)
+                  .HasForeignKey(ce => ce.CustomerId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            
+            // Composite index to prevent duplicate emails per customer
+            entity.HasIndex(e => new { e.CustomerId, e.Email }).IsUnique();
         });
 
         // Configure Job entity
