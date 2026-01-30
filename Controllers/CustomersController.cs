@@ -234,6 +234,40 @@ namespace Invoqs.API.Controllers
             }
         }
 
+        /// <summary>
+        /// Check for duplicate emails across customers
+        /// </summary>
+        [HttpPost("check-duplicates")]
+        public async Task<ActionResult<DuplicateCheckResponseDTO>> CheckDuplicates(DuplicateCheckRequestDTO request)
+        {
+            try
+            {
+                if (request.Emails == null || !request.Emails.Any())
+                {
+                    return BadRequest("At least one email is required for duplicate checking");
+                }
+
+                _logger.LogInformation("Checking for duplicate emails for {EmailCount} email(s)", request.Emails.Count);
+                
+                var duplicates = await _customerService.CheckEmailDuplicatesAsync(
+                    request.Emails, 
+                    request.ExcludeCustomerId);
+
+                var response = new DuplicateCheckResponseDTO
+                {
+                    HasDuplicates = duplicates.Any(),
+                    DuplicateCustomers = duplicates
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking for duplicate emails");
+                return StatusCode(500, new { error = "An error occurred while checking for duplicate emails" });
+            }
+        }
+
         // /// <summary>
         // /// Get lightweight customer summaries for dropdowns
         // /// </summary>

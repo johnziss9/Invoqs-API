@@ -371,4 +371,52 @@ public class CustomerService : ICustomerService
             customerDTO.OutstandingAmount = 0;
         }
     }
+
+    public async Task<List<DuplicateCustomerDTO>> CheckEmailDuplicatesAsync(List<string> emails, int? excludeCustomerId = null)
+    {
+        _logger.LogInformation("Checking for duplicate emails across customers");
+
+        try
+        {
+            // Normalize emails for case-insensitive comparison
+            var normalizedEmails = emails.Select(e => e.ToLower().Trim()).ToList();
+
+            // Find customers with matching emails
+            var customersWithDuplicates = await _context.Customers
+                .Include(c => c.Emails)
+                .Include(c => c.Jobs.Where(j => !j.IsDeleted))
+                .Where(c => c.Id != excludeCustomerId && // Exclude current customer if editing
+                           c.Emails.Any(e => normalizedEmails.Contains(e.Email.ToLower())))
+                .ToListAsync();
+
+            var duplicateCustomers = new List<DuplicateCustomerDTO>();
+
+            foreach (var customer in customersWithDuplicates)
+            {
+                // Find which emails match
+                var matchingEmails = customer.Emails
+                    .Where(e => normalizedEmails.Contains(e.Email.ToLower()))
+                    .Select(e => e.Email)
+                    .ToList();
+
+                duplicateCustomers.Add(new DuplicateCustomerDTO
+                {
+                    Id = customer.Id,
+                    Name = customer.Name,
+                    Phone = customer.Phone ?? string.Empty,
+                    TotalJobs = customer.Jobs.Count,
+                    CreatedDate = customer.CreatedDate,
+                    MatchingEmails = matchingEmails
+                });
+            }
+
+            _logger.LogInformation("Found {Count} customers with duplicate emails", duplicateCustomers.Count);
+            return duplicateCustomers;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking for duplicate emails");
+            throw;
+        }
+    }
 }

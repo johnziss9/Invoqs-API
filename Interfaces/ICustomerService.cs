@@ -11,5 +11,6 @@ public interface ICustomerService
     Task<bool> DeleteCustomerAsync(int id);
     Task<bool> CustomerExistsAsync(int id);
     Task<IEnumerable<CustomerDTO>> SearchCustomersAsync(string searchTerm);
+    Task<List<DuplicateCustomerDTO>> CheckEmailDuplicatesAsync(List<string> emails, int? excludeCustomerId = null);
     // Task<IEnumerable<CustomerSummaryDTO>> GetCustomerSummariesAsync();
 }
