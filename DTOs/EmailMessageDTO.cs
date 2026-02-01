@@ -8,4 +8,5 @@ public class EmailMessageDto
     public string HtmlBody { get; set; } = string.Empty;
     public byte[]? AttachmentData { get; set; }
     public string? AttachmentFileName { get; set; }
+    public List<string> BccEmails { get; set; } = new();
 }

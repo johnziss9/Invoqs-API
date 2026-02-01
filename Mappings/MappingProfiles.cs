@@ -109,6 +109,8 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
             .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => 
                 src.Customer.Emails.FirstOrDefault() != null ? src.Customer.Emails.First().Email : ""))
+            .ForMember(dest => dest.CustomerEmails, opt => opt.MapFrom(src =>
+                src.Customer.Emails.Select(e => e.Email).ToList()))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
             .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted))
             .ForMember(dest => dest.CustomerCreatedDate, opt => opt.MapFrom(src => src.Customer.CreatedDate))
@@ -177,6 +179,8 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted)) 
             .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => 
                 src.Customer.Emails.FirstOrDefault() != null ? src.Customer.Emails.First().Email : ""))
+            .ForMember(dest => dest.CustomerEmails, opt => opt.MapFrom(src =>
+                src.Customer.Emails.Select(e => e.Email).ToList()))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
             .ForMember(dest => dest.Invoices, opt => opt.MapFrom(src => src.ReceiptInvoices));
 

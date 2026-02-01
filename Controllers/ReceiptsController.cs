@@ -158,11 +158,11 @@ namespace Invoqs.API.Controllers
         /// Send receipt to customer via email
         /// </summary>
         [HttpPost("{id:int}/send")]
-        public async Task<IActionResult> SendReceipt(int id)
+        public async Task<IActionResult> SendReceipt(int id, [FromBody] SendReceiptRequestDTO? request = null)
         {
             try
             {
-                var result = await _receiptService.SendReceiptAsync(id);
+                var result = await _receiptService.SendReceiptAsync(id, request?.RecipientEmails);
 
                 if (!result)
                 {

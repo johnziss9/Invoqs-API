@@ -13,6 +13,7 @@ public class ReceiptDTO
     public string CustomerName { get; set; } = string.Empty;
     public bool CustomerIsDeleted { get; set; }
     public string CustomerEmail { get; set; } = string.Empty;
+    public List<string> CustomerEmails { get; set; } = new();
     public string CustomerPhone { get; set; } = string.Empty;
     public string? CustomerVatNumber { get; set; }
     public decimal TotalAmount { get; set; }
@@ -59,4 +60,12 @@ public class CreateReceiptDTO
     public int CustomerId { get; set; }
 
     public List<int> InvoiceIds { get; set; } = new();
+}
+
+/// <summary>
+/// Data for sending a receipt with selected emails
+/// </summary>
+public class SendReceiptRequestDTO
+{
+    public List<string>? RecipientEmails { get; set; }
 }

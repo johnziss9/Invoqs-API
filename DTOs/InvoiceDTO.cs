@@ -35,8 +35,9 @@ public class InvoiceDTO
 
     // Customer information (included in responses)
     public string CustomerName { get; set; } = string.Empty;
-    public string CustomerEmail { get; set; } = string.Empty;
-    public string CustomerPhone { get; set; } = string.Empty;
+    public string? CustomerEmail { get; set; }
+    public List<string> CustomerEmails { get; set; } = new();
+    public string? CustomerPhone { get; set; }
     public bool CustomerIsDeleted { get; set; }
     public DateTime CustomerCreatedDate { get; set; }
     public DateTime? CustomerUpdatedDate { get; set; }
@@ -164,6 +165,8 @@ public class UpdateInvoiceDTO
 public class MarkInvoiceAsSentDTO
 {
     public DateTime? SentDate { get; set; } = DateTime.Today;
+    public List<string>? RecipientEmails { get; set; }
+
 }
 
 /// <summary>

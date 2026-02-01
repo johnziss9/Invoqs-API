@@ -246,7 +246,7 @@ namespace Invoqs.API.Controllers
 
             try
             {
-                var invoice = await _invoiceService.MarkInvoiceAsSentAsync(id);
+                var invoice = await _invoiceService.MarkInvoiceAsSentAsync(id, sentDto.RecipientEmails);
                 if (invoice == null)
                 {
                     _logger.LogWarning("Invoice with ID {InvoiceId} not found for sending", id);

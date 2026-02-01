@@ -4,8 +4,8 @@ namespace Invoqs.API.Interfaces;
 
 public interface IEmailService
 {
-    Task<EmailResponseDto> SendInvoiceEmailAsync(InvoiceDTO invoice, byte[] pdfData);
-    Task<EmailResponseDto> SendReceiptEmailAsync(ReceiptDTO receipt, byte[] pdfData);
+    Task<EmailResponseDto> SendInvoiceEmailAsync(InvoiceDTO invoice, byte[] pdfData, List<string>? recipientEmails = null);
+    Task<EmailResponseDto> SendReceiptEmailAsync(ReceiptDTO receipt, byte[] pdfData, List<string>? recipientEmails = null);
     Task<EmailResponseDto> SendInvoiceCancelledEmailAsync(InvoiceDTO invoice);
     bool ValidateConfigurationAsync();
 }
