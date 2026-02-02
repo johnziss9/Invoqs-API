@@ -360,19 +360,39 @@ public class JobService : IJobService
         }
     }
 
-    public async Task<IEnumerable<string>> SearchAddressesAsync(string query)
+    public async Task<IEnumerable<string>> SearchAddressesAsync(string query, int? customerId = null)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
+            // Start with base query
+            var jobQuery = _context.Jobs.Where(j => !j.IsDeleted && !string.IsNullOrEmpty(j.Address));
+
+            // Filter by customer if provided
+            if (customerId.HasValue && customerId.Value > 0)
             {
-                return Enumerable.Empty<string>();
+                jobQuery = jobQuery.Where(j => j.CustomerId == customerId.Value);
+                
+                // When customer filter is applied, allow filtering with ANY query length
+                if (!string.IsNullOrWhiteSpace(query))
+                {
+                    jobQuery = jobQuery.Where(j => j.Address.ToLower().Contains(query.ToLower()));
+                }
+            }
+            else
+            {
+                // No customer filter - require at least 2 characters
+                if (!string.IsNullOrWhiteSpace(query) && query.Length >= 2)
+                {
+                    jobQuery = jobQuery.Where(j => j.Address.ToLower().Contains(query.ToLower()));
+                }
+                else
+                {
+                    // No query and no customer filter - return empty
+                    return Enumerable.Empty<string>();
+                }
             }
 
-            var addresses = await _context.Jobs
-                .Where(j => !j.IsDeleted && 
-                           !string.IsNullOrEmpty(j.Address) && 
-                           j.Address.ToLower().Contains(query.ToLower()))
+            var addresses = await jobQuery
                 .Select(j => j.Address.Trim())
                 .Distinct()
                 .OrderBy(a => a)
@@ -383,7 +403,7 @@ public class JobService : IJobService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error searching addresses with query: {Query}", query);
+            _logger.LogError(ex, "Error searching addresses with query: {Query}, CustomerId: {CustomerId}", query, customerId);
             throw;
         }
     }
