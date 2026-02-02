@@ -28,6 +28,7 @@ public class CustomerService : ICustomerService
         try
         {
             var customers = await _context.Customers
+                .Include(c => c.Emails)
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
                 .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .OrderBy(c => c.Name)
@@ -59,6 +60,7 @@ public class CustomerService : ICustomerService
         try
         {
             var customer = await _context.Customers
+                .Include(c => c.Emails)
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
                 .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -88,23 +90,31 @@ public class CustomerService : ICustomerService
 
         try
         {
-            // Check if email already exists
-            var existingCustomer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Email.ToLower() == createDTO.Email.ToLower());
-
-            if (existingCustomer != null)
-            {
-                throw new InvalidOperationException($"Customer with email '{createDTO.Email}' already exists");
-            }
-
             var customer = _mapper.Map<Customer>(createDTO);
             customer.CreatedDate = DateTime.UtcNow;
+
+            // Add emails to the customer
+            foreach (var email in createDTO.Emails)
+            {
+                customer.Emails.Add(new CustomerEmail
+                {
+                    Email = email.Trim(),
+                    CreatedDate = DateTime.UtcNow
+                });
+            }
 
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
 
-            var customerDTO = _mapper.Map<CustomerDTO>(customer);
-            CalculateCustomerStatistics(customerDTO, customer);
+            // Reload customer with emails to ensure proper mapping
+            var createdCustomer = await _context.Customers
+                .Include(c => c.Emails)
+                .Include(c => c.Jobs.Where(j => !j.IsDeleted))
+                .Include(c => c.Invoices.Where(i => !i.IsDeleted))
+                .FirstOrDefaultAsync(c => c.Id == customer.Id);
+
+            var customerDTO = _mapper.Map<CustomerDTO>(createdCustomer!);
+            CalculateCustomerStatistics(customerDTO, createdCustomer!);
 
             _logger.LogInformation("Created customer with ID: {Id}", customer.Id);
             return customerDTO;
@@ -123,6 +133,7 @@ public class CustomerService : ICustomerService
         try
         {
             var customer = await _context.Customers
+                .Include(c => c.Emails)
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
                 .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -133,24 +144,24 @@ public class CustomerService : ICustomerService
                 return null;
             }
 
-            var updatedEmail = updateDTO.Email?.Trim().ToLower() ?? "";
-            var currentEmail = customer.Email?.Trim().ToLower() ?? "";
-
-            // Check if email already exists (excluding current customer)
-            if (updatedEmail != currentEmail)
-            {
-                var existingCustomer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.Email.ToLower() == updatedEmail && c.Id != id && !c.IsDeleted);
-
-                if (existingCustomer != null)
-                {
-                    throw new InvalidOperationException($"Customer with email '{updateDTO.Email}' already exists");
-                }
-            }
-
-            // Update fields
+            // Update basic fields (excluding emails)
             _mapper.Map(updateDTO, customer);
             customer.UpdatedDate = DateTime.UtcNow;
+
+            // Update emails collection
+            // Remove all existing emails
+            _context.CustomerEmails.RemoveRange(customer.Emails);
+
+            // Add new emails
+            foreach (var email in updateDTO.Emails)
+            {
+                customer.Emails.Add(new CustomerEmail
+                {
+                    Email = email.Trim(),
+                    CustomerId = customer.Id,
+                    CreatedDate = DateTime.UtcNow
+                });
+            }
 
             await _context.SaveChangesAsync();
 
@@ -174,6 +185,7 @@ public class CustomerService : ICustomerService
         try
         {
             var customer = await _context.Customers
+                .Include(c => c.Emails)
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
                 .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -274,10 +286,11 @@ public class CustomerService : ICustomerService
             var searchLower = searchTerm.ToLower();
 
             var customers = await _context.Customers
+                .Include(c => c.Emails)
                 .Include(c => c.Jobs.Where(j => !j.IsDeleted))
                 .Include(c => c.Invoices.Where(i => !i.IsDeleted))
                 .Where(c => c.Name.ToLower().Contains(searchLower)
-                         || c.Email.ToLower().Contains(searchLower)
+                         || c.Emails.Any(e => e.Email.ToLower().Contains(searchLower))
                          || (c.Phone != null && c.Phone.Contains(searchTerm)))
                 .OrderBy(c => c.Name)
                 .ToListAsync();
@@ -356,6 +369,54 @@ public class CustomerService : ICustomerService
             customerDTO.TotalRevenue = 0;
             customerDTO.UnpaidInvoices = 0;
             customerDTO.OutstandingAmount = 0;
+        }
+    }
+
+    public async Task<List<DuplicateCustomerDTO>> CheckEmailDuplicatesAsync(List<string> emails, int? excludeCustomerId = null)
+    {
+        _logger.LogInformation("Checking for duplicate emails across customers");
+
+        try
+        {
+            // Normalize emails for case-insensitive comparison
+            var normalizedEmails = emails.Select(e => e.ToLower().Trim()).ToList();
+
+            // Find customers with matching emails
+            var customersWithDuplicates = await _context.Customers
+                .Include(c => c.Emails)
+                .Include(c => c.Jobs.Where(j => !j.IsDeleted))
+                .Where(c => c.Id != excludeCustomerId && // Exclude current customer if editing
+                           c.Emails.Any(e => normalizedEmails.Contains(e.Email.ToLower())))
+                .ToListAsync();
+
+            var duplicateCustomers = new List<DuplicateCustomerDTO>();
+
+            foreach (var customer in customersWithDuplicates)
+            {
+                // Find which emails match
+                var matchingEmails = customer.Emails
+                    .Where(e => normalizedEmails.Contains(e.Email.ToLower()))
+                    .Select(e => e.Email)
+                    .ToList();
+
+                duplicateCustomers.Add(new DuplicateCustomerDTO
+                {
+                    Id = customer.Id,
+                    Name = customer.Name,
+                    Phone = customer.Phone ?? string.Empty,
+                    TotalJobs = customer.Jobs.Count,
+                    CreatedDate = customer.CreatedDate,
+                    MatchingEmails = matchingEmails
+                });
+            }
+
+            _logger.LogInformation("Found {Count} customers with duplicate emails", duplicateCustomers.Count);
+            return duplicateCustomers;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking for duplicate emails");
+            throw;
         }
     }
 }

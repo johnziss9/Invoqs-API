@@ -10,7 +10,7 @@ public interface IInvoiceService
     Task<InvoiceDTO> CreateInvoiceAsync(CreateInvoiceDTO createDTO);
     Task<InvoiceDTO?> UpdateInvoiceAsync(int id, UpdateInvoiceDTO updateDTO);
     Task<bool> DeleteInvoiceAsync(int id);
-    Task<InvoiceDTO?> MarkInvoiceAsSentAsync(int id);
+    Task<InvoiceDTO?> MarkInvoiceAsSentAsync(int id, List<string>? recipientEmails = null);
     Task<InvoiceDTO?> MarkInvoiceAsDeliveredAsync(int id); 
     Task<InvoiceDTO?> MarkInvoiceAsPaidAsync(int id, MarkInvoiceAsPaidDTO paymentDTO);
     Task<InvoiceDTO?> CancelInvoiceAsync(int id, CancelInvoiceDTO? cancelDTO = null);

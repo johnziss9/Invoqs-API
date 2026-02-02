@@ -51,7 +51,7 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task<EmailResponseDto> SendInvoiceEmailAsync(InvoiceDTO invoice, byte[] pdfData)
+    public async Task<EmailResponseDto> SendInvoiceEmailAsync(InvoiceDTO invoice, byte[] pdfData, List<string>? recipientEmails = null)
     {
         try
         {
@@ -68,8 +68,13 @@ public class EmailService : IEmailService
                 };
             }
 
-            // Validate customer has email
-            if (string.IsNullOrWhiteSpace(invoice.CustomerEmail))
+            // Determine recipient emails
+            var emails = (recipientEmails != null && recipientEmails.Count > 0)
+                ? recipientEmails
+                : new List<string> { invoice.CustomerEmail ?? "" };
+
+            // Validate we have at least one valid email
+            if (emails.All(e => string.IsNullOrWhiteSpace(e)))
             {
                 _logger.LogWarning("Customer has no email address for Invoice ID: {InvoiceId}", invoice.Id);
                 return new EmailResponseDto
@@ -79,11 +84,12 @@ public class EmailService : IEmailService
                 };
             }
 
-            // Build email message
+            // Build email message - first email as TO, rest as BCC
             var emailMessage = new EmailMessageDto
             {
-                ToEmail = invoice.CustomerEmail,
+                ToEmail = emails[0],
                 ToName = invoice.CustomerName,
+                BccEmails = emails.Skip(1).ToList(),
                 Subject = $"Τιμολόγιο #{invoice.InvoiceNumber}",
                 HtmlBody = GenerateInvoiceEmailHtml(invoice),
                 AttachmentData = pdfData,
@@ -104,7 +110,7 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task<EmailResponseDto> SendReceiptEmailAsync(ReceiptDTO receipt, byte[] pdfData)
+    public async Task<EmailResponseDto> SendReceiptEmailAsync(ReceiptDTO receipt, byte[] pdfData, List<string>? recipientEmails = null)
     {
         try
         {
@@ -121,8 +127,13 @@ public class EmailService : IEmailService
                 };
             }
 
-            // Validate customer has email
-            if (string.IsNullOrWhiteSpace(receipt.CustomerEmail))
+            // Determine recipient emails
+            var emails = (recipientEmails != null && recipientEmails.Count > 0)
+                ? recipientEmails
+                : new List<string> { receipt.CustomerEmail ?? "" };
+
+            // Validate we have at least one valid email
+            if (emails.All(e => string.IsNullOrWhiteSpace(e)))
             {
                 _logger.LogWarning("Customer has no email address for Receipt ID: {ReceiptId}", receipt.Id);
                 return new EmailResponseDto
@@ -132,11 +143,12 @@ public class EmailService : IEmailService
                 };
             }
 
-            // Build email message
+            // Build email message - first email as TO, rest as BCC
             var emailMessage = new EmailMessageDto
             {
-                ToEmail = receipt.CustomerEmail,
+                ToEmail = emails[0],
                 ToName = receipt.CustomerName,
+                BccEmails = emails.Skip(1).ToList(),
                 Subject = $"Απόδειξη Πληρωμής #{receipt.ReceiptNumber}",
                 HtmlBody = GenerateReceiptEmailHtml(receipt),
                 AttachmentData = pdfData,
@@ -242,6 +254,15 @@ public class EmailService : IEmailService
                     Name = emailMessage.AttachmentFileName
                 };
                 sendSmtpEmail.Attachment = new List<SendSmtpEmailAttachment> { attachment };
+            }
+
+            // Add BCC recipients if any
+            if (emailMessage.BccEmails.Count > 0)
+            {
+                sendSmtpEmail.Bcc = emailMessage.BccEmails
+                    .Where(email => !string.IsNullOrWhiteSpace(email))
+                    .Select(email => new SendSmtpEmailBcc(email))
+                    .ToList();
             }
 
             // Send email

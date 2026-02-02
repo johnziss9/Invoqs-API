@@ -20,8 +20,12 @@ public class MappingProfiles : Profile
 
     private void CreateCustomerMappings()
     {
+        // CustomerEmail Entity -> CustomerEmailDTO
+        CreateMap<CustomerEmail, CustomerEmailDTO>();
+
         // Customer Entity -> CustomerDTO
         CreateMap<Customer, CustomerDTO>()
+            .ForMember(dest => dest.Emails, opt => opt.MapFrom(src => src.Emails))
             .ForMember(dest => dest.TotalJobs, opt => opt.MapFrom(src => src.Jobs.Count))
             .ForMember(dest => dest.UninvoicedJobs, opt => opt.MapFrom(src =>
                 src.Jobs.Count(j => !j.IsInvoiced)))
@@ -30,25 +34,29 @@ public class MappingProfiles : Profile
 
         // Customer Entity -> CustomerSummaryDTO
         CreateMap<Customer, CustomerSummaryDTO>()
+            .ForMember(dest => dest.Emails, opt => opt.MapFrom(src => 
+                src.Emails.Select(e => e.Email).ToList()))
             .ForMember(dest => dest.TotalJobs, opt => opt.MapFrom(src => src.Jobs.Count))
             .ForMember(dest => dest.TotalRevenue, opt => opt.MapFrom(src =>
                 src.Jobs.Sum(j => j.Price)));
 
-        // CreateCustomerDTO -> Customer Entity
+        // CreateCustomerDTO -> Customer Entity (emails handled separately in service)
         CreateMap<CreateCustomerDTO, Customer>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+            .ForMember(dest => dest.Emails, opt => opt.Ignore())
             .ForMember(dest => dest.Jobs, opt => opt.Ignore())
             .ForMember(dest => dest.Invoices, opt => opt.Ignore());
 
-        // UpdateCustomerDTO -> Customer Entity
+        // UpdateCustomerDTO -> Customer Entity (emails handled separately in service)
         CreateMap<UpdateCustomerDTO, Customer>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+            .ForMember(dest => dest.Emails, opt => opt.Ignore())
             .ForMember(dest => dest.Jobs, opt => opt.Ignore())
             .ForMember(dest => dest.Invoices, opt => opt.Ignore());
     }
@@ -59,7 +67,8 @@ public class MappingProfiles : Profile
         CreateMap<Job, JobDTO>()
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
             .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted))
-            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
+            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => 
+                src.Customer.Emails.FirstOrDefault() != null ? src.Customer.Emails.First().Email : ""))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
             .ForMember(dest => dest.CustomerCreatedDate, opt => opt.MapFrom(src => src.Customer.CreatedDate))
             .ForMember(dest => dest.CustomerUpdatedDate, opt => opt.MapFrom(src => src.Customer.UpdatedDate));
@@ -98,7 +107,10 @@ public class MappingProfiles : Profile
         // Invoice Entity -> InvoiceDTO
         CreateMap<Invoice, InvoiceDTO>()
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
-            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
+            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => 
+                src.Customer.Emails.FirstOrDefault() != null ? src.Customer.Emails.First().Email : ""))
+            .ForMember(dest => dest.CustomerEmails, opt => opt.MapFrom(src =>
+                src.Customer.Emails.Select(e => e.Email).ToList()))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
             .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted))
             .ForMember(dest => dest.CustomerCreatedDate, opt => opt.MapFrom(src => src.Customer.CreatedDate))
@@ -165,7 +177,10 @@ public class MappingProfiles : Profile
         CreateMap<Receipt, ReceiptDTO>()
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
             .ForMember(dest => dest.CustomerIsDeleted, opt => opt.MapFrom(src => src.Customer.IsDeleted)) 
-            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => src.Customer.Email))
+            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => 
+                src.Customer.Emails.FirstOrDefault() != null ? src.Customer.Emails.First().Email : ""))
+            .ForMember(dest => dest.CustomerEmails, opt => opt.MapFrom(src =>
+                src.Customer.Emails.Select(e => e.Email).ToList()))
             .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer.Phone))
             .ForMember(dest => dest.Invoices, opt => opt.MapFrom(src => src.ReceiptInvoices));
 

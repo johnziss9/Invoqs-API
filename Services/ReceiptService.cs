@@ -32,6 +32,7 @@ public class ReceiptService : IReceiptService
             var receipts = await _context.Receipts
                 .IgnoreQueryFilters()
                 .Include(r => r.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
                 .Where(r => !r.IsDeleted)
@@ -56,6 +57,7 @@ public class ReceiptService : IReceiptService
             var receipt = await _context.Receipts
                 .IgnoreQueryFilters()
                 .Include(r => r.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
                 .Where(r => !r.IsDeleted)
@@ -83,6 +85,7 @@ public class ReceiptService : IReceiptService
         {
             var receipts = await _context.Receipts
                 .Include(r => r.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
                 .Where(r => r.CustomerId == customerId && !r.IsDeleted)
@@ -208,12 +211,13 @@ public class ReceiptService : IReceiptService
         }
     }
 
-    public async Task<bool> SendReceiptAsync(int receiptId)
+    public async Task<bool> SendReceiptAsync(int receiptId, List<string>? recipientEmails = null)
     {
         try
         {
             var receipt = await _context.Receipts
                 .Include(r => r.Customer)
+                    .ThenInclude(c => c.Emails)
                 .FirstOrDefaultAsync(r => r.Id == receiptId && !r.IsDeleted);
 
             if (receipt == null)
@@ -233,7 +237,7 @@ public class ReceiptService : IReceiptService
 
             // Send email BEFORE updating database
             _logger.LogInformation("Attempting to send receipt email for Receipt ID: {ReceiptId}", receiptId);
-            var emailResult = await _emailService.SendReceiptEmailAsync(receiptDTO, pdfData);
+            var emailResult = await _emailService.SendReceiptEmailAsync(receiptDTO, pdfData, recipientEmails);
 
             if (!emailResult.Success)
             {
@@ -252,8 +256,8 @@ public class ReceiptService : IReceiptService
 
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Receipt {ReceiptNumber} marked as sent to {CustomerEmail}",
-                receipt.ReceiptNumber, receipt.Customer.Email);
+            _logger.LogInformation("Receipt {ReceiptNumber} marked as sent to customer {CustomerId}",
+                receipt.ReceiptNumber, receipt.CustomerId);
 
             return true;
         }

@@ -96,8 +96,8 @@ namespace Invoqs.API.Controllers
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("email"))
             {
-                _logger.LogWarning("Customer creation failed - email already exists: {Email}", createCustomerDto.Email);
-                return Conflict(new { error = "Email address already exists", email = createCustomerDto.Email });
+                _logger.LogWarning("Customer creation failed - duplicate email in request");
+                return Conflict(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -150,8 +150,8 @@ namespace Invoqs.API.Controllers
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("email"))
             {
-                _logger.LogWarning("Customer update failed - email already exists: {Email}", updateCustomerDto.Email);
-                return Conflict(new { error = "Email address already exists", email = updateCustomerDto.Email });
+                _logger.LogWarning("Customer update failed - duplicate email in request");
+                return Conflict(new { error = ex.Message });
             }
             catch (Exception ex)
             {
@@ -231,6 +231,40 @@ namespace Invoqs.API.Controllers
             {
                 _logger.LogError(ex, "Error checking customer existence with ID: {CustomerId} for user {UserId}", id, User.Identity?.Name);
                 return StatusCode(500, new { error = "An error occurred while checking if the customer exists" });
+            }
+        }
+
+        /// <summary>
+        /// Check for duplicate emails across customers
+        /// </summary>
+        [HttpPost("check-duplicates")]
+        public async Task<ActionResult<DuplicateCheckResponseDTO>> CheckDuplicates(DuplicateCheckRequestDTO request)
+        {
+            try
+            {
+                if (request.Emails == null || !request.Emails.Any())
+                {
+                    return BadRequest("At least one email is required for duplicate checking");
+                }
+
+                _logger.LogInformation("Checking for duplicate emails for {EmailCount} email(s)", request.Emails.Count);
+                
+                var duplicates = await _customerService.CheckEmailDuplicatesAsync(
+                    request.Emails, 
+                    request.ExcludeCustomerId);
+
+                var response = new DuplicateCheckResponseDTO
+                {
+                    HasDuplicates = duplicates.Any(),
+                    DuplicateCustomers = duplicates
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking for duplicate emails");
+                return StatusCode(500, new { error = "An error occurred while checking for duplicate emails" });
             }
         }
 

@@ -33,6 +33,7 @@ public class InvoiceService : IInvoiceService
             var invoices = await _context.Invoices
                 .IgnoreQueryFilters()
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .Where(i => !i.IsDeleted)
@@ -66,6 +67,7 @@ public class InvoiceService : IInvoiceService
             var invoice = await _context.Invoices
                 .IgnoreQueryFilters()
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .Where(i => i.Id == id && !i.IsDeleted)
@@ -99,6 +101,7 @@ public class InvoiceService : IInvoiceService
             var invoices = await _context.Invoices
                 .IgnoreQueryFilters()
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .Include(i => i.ReceiptInvoices)
@@ -233,6 +236,7 @@ public class InvoiceService : IInvoiceService
         {
             var invoice = await _context.Invoices
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .FirstOrDefaultAsync(i => i.Id == id);
@@ -416,7 +420,7 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public async Task<InvoiceDTO?> MarkInvoiceAsSentAsync(int id)
+    public async Task<InvoiceDTO?> MarkInvoiceAsSentAsync(int id, List<string>? recipientEmails = null)
     {
         _logger.LogInformation("Marking invoice as sent ID: {Id}", id);
 
@@ -424,6 +428,7 @@ public class InvoiceService : IInvoiceService
         {
             var invoice = await _context.Invoices
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .FirstOrDefaultAsync(i => i.Id == id);
@@ -447,7 +452,7 @@ public class InvoiceService : IInvoiceService
 
             // Send email BEFORE updating database
             _logger.LogInformation("Attempting to send invoice email for Invoice ID: {Id}", id);
-            var emailResult = await _emailService.SendInvoiceEmailAsync(invoiceDTO, pdfData);
+            var emailResult = await _emailService.SendInvoiceEmailAsync(invoiceDTO, pdfData, recipientEmails);
 
             if (!emailResult.Success)
             {
@@ -499,6 +504,7 @@ public class InvoiceService : IInvoiceService
         {
             var invoice = await _context.Invoices
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .FirstOrDefaultAsync(i => i.Id == id);
@@ -540,6 +546,7 @@ public class InvoiceService : IInvoiceService
         {
             var invoice = await _context.Invoices
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .FirstOrDefaultAsync(i => i.Id == id);
@@ -585,6 +592,7 @@ public class InvoiceService : IInvoiceService
         {
             var invoice = await _context.Invoices
                 .Include(i => i.Customer)
+                    .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
                 .FirstOrDefaultAsync(i => i.Id == id);
@@ -618,7 +626,7 @@ public class InvoiceService : IInvoiceService
             var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
 
             // Send cancellation email if invoice was previously sent to customer
-            if (shouldSendEmail && invoiceDTO != null && !string.IsNullOrWhiteSpace(invoice.Customer?.Email))
+            if (shouldSendEmail && invoiceDTO != null && invoice.Customer?.Emails?.Any() == true)
             {
                 _logger.LogInformation("Sending cancellation email for Invoice ID: {Id}", id);
                 
