@@ -24,5 +24,6 @@ public enum SandDeliveryMethod
 public enum ForkliftSize
 {
     Size17m,
-    Size25m
+    Size26m,
+    Size30m
 }

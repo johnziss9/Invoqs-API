@@ -82,7 +82,7 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
         {
             RuleFor(x => x.ForkliftSize)
                 .NotEmpty().WithMessage("Forklift size is required for forklift service")
-                .Must(BeValidForkliftSize).WithMessage("Invalid forklift size. Must be 17m or 25m");
+                .Must(BeValidForkliftSize).WithMessage("Invalid forklift size. Must be 17m, 26m or 30m");
         });
     }
 
@@ -114,7 +114,7 @@ public class CreateJobValidator : AbstractValidator<CreateJobDTO>
     private bool BeValidForkliftSize(string? forkliftSize)
     {
         if (string.IsNullOrWhiteSpace(forkliftSize)) return false;
-        return forkliftSize == "17m" || forkliftSize == "25m";
+        return forkliftSize == "17m" || forkliftSize == "26m" || forkliftSize == "30m";
     }
 }
 
@@ -202,7 +202,7 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
         {
             RuleFor(x => x.ForkliftSize)
                 .NotEmpty().WithMessage("Forklift size is required for forklift service")
-                .Must(BeValidForkliftSize).WithMessage("Invalid forklift size. Must be 17m or 25m");
+                .Must(BeValidForkliftSize).WithMessage("Invalid forklift size. Must be 17m, 26m or 30m");
         });
     }
 
@@ -265,7 +265,7 @@ public class UpdateJobValidator : AbstractValidator<UpdateJobDTO>
     private bool BeValidForkliftSize(string? forkliftSize)
     {
         if (string.IsNullOrWhiteSpace(forkliftSize)) return false;
-        return forkliftSize == "17m" || forkliftSize == "25m";
+        return forkliftSize == "17m" || forkliftSize == "26m" || forkliftSize == "30m";
     }
 }
 
