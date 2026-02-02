@@ -45,7 +45,7 @@ public class Job
     public string? SandDeliveryMethod { get; set; }  // InBags, ByTruck
     
     // Forklift Service specific fields
-    public string? ForkliftSize { get; set; }  // 17m, 25m
+    public string? ForkliftSize { get; set; }  // 17m, 26m, 30m
 
     // Navigation properties
     public virtual Customer Customer { get; set; } = null!;
