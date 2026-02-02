@@ -15,5 +15,5 @@ public interface IJobService
     Task<bool> DeleteJobAsync(int id);
     Task<bool> MarkJobsAsInvoicedAsync(IEnumerable<int> jobIds, int invoiceId);
     Task<bool> RemoveJobsFromInvoiceAsync(IEnumerable<int> jobIds);
-    Task<IEnumerable<string>> SearchAddressesAsync(string query);
+    Task<IEnumerable<string>> SearchAddressesAsync(string query, int? customerId = null);
 }
