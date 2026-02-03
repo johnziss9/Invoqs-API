@@ -764,6 +764,7 @@ public class InvoiceService : IInvoiceService
             JobType.SkipRental => "Skip Rental",
             JobType.SandDelivery => "Sand Delivery",
             JobType.ForkLiftService => "Fork Lift Service",
+            JobType.Transfer => "Transfer",
             _ => job.Type.ToString()
         };
 

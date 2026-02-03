@@ -48,6 +48,7 @@ public class JobDTO
         JobType.SkipRental => "Skip Rental",
         JobType.SandDelivery => "Sand Delivery",
         JobType.ForkLiftService => "Fork Lift Service",
+        JobType.Transfer => "Transfer",
         _ => Type.ToString()
     };
 
@@ -56,6 +57,7 @@ public class JobDTO
         JobType.SkipRental => "/images/icons/skip.png",
         JobType.SandDelivery => "/images/icons/sand.png",
         JobType.ForkLiftService => "/images/icons/forklift.png",
+        JobType.Transfer => "/images/icons/transfer.png",
         _ => "bi-briefcase"
     };
 
@@ -76,6 +78,7 @@ public class JobDTO
         JobType.SkipRental => 0.05m, // 5%
         JobType.SandDelivery => 0.19m, // 19%
         JobType.ForkLiftService => 0.19m, // 19%
+        JobType.Transfer => 0.19m, // 19%
         _ => 0.19m
     };
 
@@ -102,6 +105,7 @@ public class JobSummaryDTO
         JobType.SkipRental => "Skip Rental",
         JobType.SandDelivery => "Sand Delivery",
         JobType.ForkLiftService => "Fork Lift Service",
+        JobType.Transfer => "Transfer",
         _ => Type.ToString()
     };
 }

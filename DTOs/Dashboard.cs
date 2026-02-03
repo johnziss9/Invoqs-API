@@ -37,11 +37,13 @@ public class JobMetricsDTO
     public int SkipRentals { get; set; }
     public int SandDeliveries { get; set; }
     public int ForkLiftServices { get; set; }
+    public int Transfers { get; set; }
 
     // Percentages
     public decimal SkipRentalPercentage { get; set; }
     public decimal SandDeliveryPercentage { get; set; }
     public decimal ForkLiftServicePercentage { get; set; }
+    public decimal TransferPercentage { get; set; }
 }
 
 /// <summary>
