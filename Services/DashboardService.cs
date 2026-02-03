@@ -100,6 +100,7 @@ public class DashboardService : IDashboardService
             var skipRentals = jobs.Count(j => j.Type == JobType.SkipRental);
             var sandDeliveries = jobs.Count(j => j.Type == JobType.SandDelivery);
             var forkLiftServices = jobs.Count(j => j.Type == JobType.ForkLiftService);
+            var transfers = jobs.Count(j => j.Type == JobType.Transfer);
 
             return new JobMetricsDTO
             {
@@ -107,7 +108,8 @@ public class DashboardService : IDashboardService
                 UninvoicedJobs = uninvoicedJobs.Count,
                 SkipRentals = skipRentals,
                 SandDeliveries = sandDeliveries,
-                ForkLiftServices = forkLiftServices
+                ForkLiftServices = forkLiftServices,
+                Transfers = transfers
             };
         }
         catch (Exception ex)
