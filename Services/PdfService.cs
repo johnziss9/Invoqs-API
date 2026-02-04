@@ -85,12 +85,39 @@ public class PdfService : IPdfService
 
                     page.Header().Element(ComposeHeader);
                     page.Content().Element(container => ComposeContent(container, invoice));
-                    page.Footer().AlignCenter().Text(x =>
+                    page.Footer().Column(footerColumn =>
                     {
-                        x.Span("Σελίδα ");
-                        x.CurrentPageNumber();
-                        x.Span(" από ");
-                        x.TotalPages();
+                        // Signature Section
+                        footerColumn.Item().Row(row =>
+                        {
+                            // Issuer signature (left)
+                            row.RelativeItem().Column(col =>
+                            {
+                                col.Item().Text("ΕΚΔΟΤΗΣ").FontSize(10).SemiBold();
+                                col.Item().PaddingTop(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                                col.Item().PaddingTop(2).Text("ISSUED BY").FontSize(8).FontColor(Colors.Grey.Medium);
+                            });
+
+                            // Spacing between signatures
+                            row.ConstantItem(50);
+
+                            // Recipient signature (right)
+                            row.RelativeItem().Column(col =>
+                            {
+                                col.Item().Text("ΠΑΡΑΛΗΠΤΗΣ").FontSize(10).SemiBold();
+                                col.Item().PaddingTop(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                                col.Item().PaddingTop(2).Text("RECEIVED BY").FontSize(8).FontColor(Colors.Grey.Medium);
+                            });
+                        });
+
+                        // Page numbers
+                        footerColumn.Item().PaddingTop(10).AlignCenter().Text(x =>
+                        {
+                            x.Span("Σελίδα ");
+                            x.CurrentPageNumber();
+                            x.Span(" από ");
+                            x.TotalPages();
+                        });
                     });
                 });
             }).GeneratePdf();
