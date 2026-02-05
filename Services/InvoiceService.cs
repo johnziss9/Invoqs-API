@@ -146,6 +146,7 @@ public class InvoiceService : IInvoiceService
             // Verify all jobs exist, uninvoiced, and belong to the customer
             var jobs = await _context.Jobs
                 .Where(j => createDTO.JobIds.Contains(j.Id))
+                .OrderBy(j => j.JobDate)
                 .ToListAsync();
 
             if (jobs.Count != createDTO.JobIds.Count)
@@ -277,6 +278,7 @@ public class InvoiceService : IInvoiceService
                 // Verify new jobs
                 var newJobs = await _context.Jobs
                     .Where(j => updateDTO.JobIds.Contains(j.Id))
+                    .OrderBy(j => j.JobDate)
                     .ToListAsync();
 
                 if (newJobs.Count != updateDTO.JobIds.Count)
@@ -768,7 +770,63 @@ public class InvoiceService : IInvoiceService
             _ => job.Type.ToString()
         };
 
-        return $"{typeDisplay} - {job.Title}";
+        var description = $"{typeDisplay} - {job.Title}";
+
+        // Add job-specific details based on type
+        switch (job.Type)
+        {
+            case JobType.SkipRental:
+                if (!string.IsNullOrEmpty(job.SkipType))
+                {
+                    var skipTypeDisplay = job.SkipType switch
+                    {
+                        "SmallSkip" => "Μικρό Skip",
+                        "LargeSkip" => "Μεγάλο Skip",
+                        "Hook" => "Γάντζος",
+                        _ => job.SkipType
+                    };
+
+                    // For small/large skips, include the skip number if available
+                    if (job.SkipType != "Hook" && !string.IsNullOrEmpty(job.SkipNumber))
+                    {
+                        description += $" ({skipTypeDisplay} #{job.SkipNumber})";
+                    }
+                    else
+                    {
+                        description += $" ({skipTypeDisplay})";
+                    }
+                }
+                else if (!string.IsNullOrEmpty(job.SkipNumber))
+                {
+                    // Fallback: if only skip number exists without type
+                    description += $" (Skip #{job.SkipNumber})";
+                }
+                break;
+
+            case JobType.ForkLiftService:
+                if (!string.IsNullOrEmpty(job.ForkliftSize))
+                {
+                    description += $" ({job.ForkliftSize})";
+                }
+                break;
+
+            case JobType.SandDelivery:
+                if (!string.IsNullOrEmpty(job.SandMaterialType))
+                {
+                    var materialDisplay = job.SandMaterialType switch
+                    {
+                        "Sand" => "Άμμος",
+                        "CrushedStone" => "Τσακίλι",
+                        "SandMixedWithCrushedStone" => "Άμμος Αναμεμειγμένη με Τσακίλι",
+                        "Soil" => "Χώμα",
+                        _ => job.SandMaterialType
+                    };
+                    description += $" ({materialDisplay})";
+                }
+                break;
+        }
+
+        return description;
     }
 
     private static void CalculateInvoiceProperties(InvoiceDTO invoiceDTO)

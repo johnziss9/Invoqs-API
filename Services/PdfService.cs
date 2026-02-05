@@ -57,20 +57,22 @@ public class PdfService : IPdfService
                 Notes = invoiceEntity.Notes,
                 CreatedDate = invoiceEntity.CreatedDate,
                 DueDate = invoiceEntity.DueDate,
-                LineItems = invoiceEntity.LineItems.Select(li => new InvoiceLineItemDTO
-                {
-                    Id = li.Id,
-                    InvoiceId = li.InvoiceId,
-                    JobId = li.JobId,
-                    Description = li.Description,
-                    Quantity = li.Quantity,
-                    UnitPrice = li.UnitPrice,
-                    LineTotal = li.LineTotal,
-                    JobTitle = li.Job?.Title ?? "",
-                    JobType = li.Job?.Type ?? JobType.SkipRental,
-                    JobAddress = li.Job?.Address ?? "",
-                    JobDate = li.Job?.JobDate
-                }).ToList()
+                LineItems = invoiceEntity.LineItems
+                    .OrderBy(li => li.Job != null ? li.Job.JobDate : DateTime.MaxValue)
+                    .Select(li => new InvoiceLineItemDTO
+                    {
+                        Id = li.Id,
+                        InvoiceId = li.InvoiceId,
+                        JobId = li.JobId,
+                        Description = li.Description,
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        LineTotal = li.LineTotal,
+                        JobTitle = li.Job?.Title ?? "",
+                        JobType = li.Job?.Type ?? JobType.SkipRental,
+                        JobAddress = li.Job?.Address ?? "",
+                        JobDate = li.Job?.JobDate
+                    }).ToList()
             };
 
             // Generate PDF using QuestPDF
