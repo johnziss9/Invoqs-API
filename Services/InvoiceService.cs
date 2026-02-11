@@ -622,6 +622,17 @@ public class InvoiceService : IInvoiceService
             invoice.CancellationNotes = cancelDTO?.CancellationNotes;
             invoice.UpdatedDate = DateTime.UtcNow;
 
+            // Clear job invoice references so they become available again
+            foreach (var lineItem in invoice.LineItems)
+            {
+                if (lineItem.Job != null)
+                {
+                    lineItem.Job.InvoiceId = null;
+                    lineItem.Job.InvoicedDate = null;
+                    lineItem.Job.UpdatedDate = DateTime.UtcNow;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
             // Get updated invoice DTO
