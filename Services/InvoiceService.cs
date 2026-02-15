@@ -36,6 +36,7 @@ public class InvoiceService : IInvoiceService
                     .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
+                .Include(i => i.Payments)
                 .Where(i => !i.IsDeleted)
                 .OrderByDescending(i => i.CreatedDate)
                 .ToListAsync();
@@ -70,6 +71,7 @@ public class InvoiceService : IInvoiceService
                     .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
+                .Include(i => i.Payments)
                 .Where(i => i.Id == id && !i.IsDeleted)
                 .FirstOrDefaultAsync(i => i.Id == id);
 
@@ -104,6 +106,7 @@ public class InvoiceService : IInvoiceService
                     .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
+                .Include(i => i.Payments)
                 .Include(i => i.ReceiptInvoices)
                     .ThenInclude(ri => ri.Receipt)
                 .Where(i => i.CustomerId == customerId && !i.IsDeleted)
@@ -540,10 +543,12 @@ public class InvoiceService : IInvoiceService
         }
     }
 
-    public async Task<InvoiceDTO?> MarkInvoiceAsPaidAsync(int id, MarkInvoiceAsPaidDTO paymentDTO)
+    public async Task<InvoiceDTO?> RecordPaymentAsync(int invoiceId, RecordPaymentDTO paymentDTO)
     {
-        _logger.LogInformation("Marking invoice as paid with invoice ID: {Id}", id);
+        _logger.LogInformation("Recording payment for invoice ID: {InvoiceId}, Amount: {Amount}",
+            invoiceId, paymentDTO.Amount);
 
+        using var transaction = await _context.Database.BeginTransactionAsync();
         try
         {
             var invoice = await _context.Invoices
@@ -551,33 +556,116 @@ public class InvoiceService : IInvoiceService
                     .ThenInclude(c => c.Emails)
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Job)
-                .FirstOrDefaultAsync(i => i.Id == id);
+                .Include(i => i.Payments)
+                .FirstOrDefaultAsync(i => i.Id == invoiceId);
 
+            if (invoice == null)
+            {
+                _logger.LogWarning("Invoice not found for payment with ID: {InvoiceId}", invoiceId);
+                return null;
+            }
+
+            // Validate invoice status
+            if (invoice.Status != InvoiceStatus.Sent &&
+                invoice.Status != InvoiceStatus.Delivered &&
+                invoice.Status != InvoiceStatus.Overdue &&
+                invoice.Status != InvoiceStatus.PartiallyPaid)
+            {
+                throw new InvalidOperationException(
+                    "Only sent, delivered, overdue, or partially paid invoices can receive payments");
+            }
+
+            // Calculate current amounts
+            var amountPaid = invoice.Payments?.Where(p => !p.IsDeleted).Sum(p => p.Amount) ?? 0;
+            var remainingAmount = invoice.Total - amountPaid;
+
+            // Validate payment amount
+            if (paymentDTO.Amount > remainingAmount)
+            {
+                throw new InvalidOperationException(
+                    $"Payment amount (€{paymentDTO.Amount:N2}) exceeds remaining balance (€{remainingAmount:N2})");
+            }
+
+            // Create payment record
+            var payment = new InvoicePayment
+            {
+                InvoiceId = invoiceId,
+                Amount = paymentDTO.Amount,
+                PaymentDate = paymentDTO.PaymentDate,
+                PaymentMethod = paymentDTO.PaymentMethod,
+                PaymentReference = paymentDTO.PaymentReference,
+                Notes = paymentDTO.Notes,
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _context.InvoicePayments.Add(payment);
+
+            // Calculate new total paid amount
+            var newAmountPaid = amountPaid + paymentDTO.Amount;
+            var newRemainingAmount = invoice.Total - newAmountPaid;
+
+            // Update invoice status based on payment
+            if (newRemainingAmount <= 0.01m) // Allow for floating point precision
+            {
+                // Invoice is fully paid
+                invoice.Status = InvoiceStatus.Paid;
+                invoice.PaymentDate = paymentDTO.PaymentDate;
+                invoice.PaymentMethod = paymentDTO.PaymentMethod;
+                invoice.PaymentReference = paymentDTO.PaymentReference;
+
+                _logger.LogInformation("Invoice {InvoiceNumber} is now fully paid", invoice.InvoiceNumber);
+            }
+            else
+            {
+                // Invoice is partially paid
+                invoice.Status = InvoiceStatus.PartiallyPaid;
+
+                _logger.LogInformation("Invoice {InvoiceNumber} is partially paid: €{Paid} / €{Total}",
+                    invoice.InvoiceNumber, newAmountPaid, invoice.Total);
+            }
+
+            invoice.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
+
+            _logger.LogInformation("Payment recorded for Invoice {InvoiceNumber}", invoice.InvoiceNumber);
+            return invoiceDTO;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error recording payment for invoice ID: {InvoiceId}", invoiceId);
+            throw;
+        }
+    }
+
+    public async Task<InvoiceDTO?> MarkInvoiceAsPaidAsync(int id, MarkInvoiceAsPaidDTO paymentDTO)
+    {
+        _logger.LogInformation("Marking invoice as paid with invoice ID: {Id}", id);
+
+        try
+        {
+            // Get invoice to determine full amount
+            var invoice = await _context.Invoices.FindAsync(id);
             if (invoice == null)
             {
                 _logger.LogWarning("Invoice not found to mark as paid with ID: {Id}", id);
                 return null;
             }
 
-            if (invoice.Status != InvoiceStatus.Sent &&
-                invoice.Status != InvoiceStatus.Delivered &&
-                invoice.Status != InvoiceStatus.Overdue)
+            // Use the new RecordPaymentAsync with full amount
+            var recordPaymentDTO = new RecordPaymentDTO
             {
-                throw new InvalidOperationException("Only sent, delivered, or overdue invoices can be marked as paid");
-            }
+                Amount = invoice.Total,
+                PaymentDate = paymentDTO.PaymentDate,
+                PaymentMethod = paymentDTO.PaymentMethod,
+                PaymentReference = paymentDTO.PaymentReference
+            };
 
-            invoice.Status = InvoiceStatus.Paid;
-            invoice.PaymentDate = paymentDTO.PaymentDate;
-            invoice.PaymentMethod = paymentDTO.PaymentMethod;
-            invoice.PaymentReference = paymentDTO.PaymentReference;
-            invoice.UpdatedDate = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            var invoiceDTO = await GetInvoiceByIdAsync(invoice.Id);
-
-            _logger.LogInformation("Marked invoice as paid with Invoice ID: {InvoiceNumber}", invoice.InvoiceNumber);
-            return invoiceDTO;
+            return await RecordPaymentAsync(id, recordPaymentDTO);
         }
         catch (Exception ex)
         {

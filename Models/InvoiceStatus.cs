@@ -5,7 +5,8 @@ public enum InvoiceStatus
     Draft = 0,
     Sent = 1,
     Delivered = 2,
-    Paid = 3,
-    Overdue = 4,
-    Cancelled = 5
+    PartiallyPaid = 3,
+    Paid = 4,
+    Overdue = 5,
+    Cancelled = 6
 }

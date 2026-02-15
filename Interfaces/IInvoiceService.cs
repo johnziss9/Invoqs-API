@@ -12,6 +12,7 @@ public interface IInvoiceService
     Task<bool> DeleteInvoiceAsync(int id);
     Task<InvoiceDTO?> MarkInvoiceAsSentAsync(int id, List<string>? recipientEmails = null);
     Task<InvoiceDTO?> MarkInvoiceAsDeliveredAsync(int id); 
+    Task<InvoiceDTO?> RecordPaymentAsync(int invoiceId, RecordPaymentDTO paymentDTO);
     Task<InvoiceDTO?> MarkInvoiceAsPaidAsync(int id, MarkInvoiceAsPaidDTO paymentDTO);
     Task<InvoiceDTO?> CancelInvoiceAsync(int id, CancelInvoiceDTO? cancelDTO = null);
     Task<decimal> GetTotalOutstandingAsync();

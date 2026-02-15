@@ -104,10 +104,13 @@ public class MappingProfiles : Profile
 
     private void CreateInvoiceMappings()
     {
+        // InvoicePayment Entity -> InvoicePaymentDTO
+        CreateMap<InvoicePayment, InvoicePaymentDTO>();
+
         // Invoice Entity -> InvoiceDTO
         CreateMap<Invoice, InvoiceDTO>()
             .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer.Name))
-            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src => 
+            .ForMember(dest => dest.CustomerEmail, opt => opt.MapFrom(src =>
                 src.Customer.Emails.FirstOrDefault() != null ? src.Customer.Emails.First().Email : ""))
             .ForMember(dest => dest.CustomerEmails, opt => opt.MapFrom(src =>
                 src.Customer.Emails.Select(e => e.Email).ToList()))
@@ -124,7 +127,13 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.LineItems, opt => opt.MapFrom(src =>
                 src.LineItems.OrderBy(li => li.Job != null ? li.Job.JobDate : DateTime.MaxValue)))
             .ForMember(dest => dest.HasReceipt,
-                opt => opt.MapFrom(src => src.ReceiptInvoices.Any(ri => !ri.Receipt.IsDeleted)));
+                opt => opt.MapFrom(src => src.ReceiptInvoices.Any(ri => !ri.Receipt.IsDeleted)))
+            .ForMember(dest => dest.AmountPaid,
+                opt => opt.MapFrom(src => src.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)))
+            .ForMember(dest => dest.RemainingAmount,
+                opt => opt.MapFrom(src => src.Total - src.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)))
+            .ForMember(dest => dest.Payments,
+                opt => opt.MapFrom(src => src.Payments.Where(p => !p.IsDeleted).OrderBy(p => p.PaymentDate)));
 
         // Invoice Entity -> InvoiceSummaryDTO
         CreateMap<Invoice, InvoiceSummaryDTO>()

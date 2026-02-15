@@ -318,6 +318,60 @@ namespace Invoqs.API.Controllers
         }
 
         /// <summary>
+        /// Record a payment (full or partial) for an invoice
+        /// </summary>
+        [HttpPost("{id:int}/payments")]
+        public async Task<ActionResult<InvoiceDTO>> RecordPayment(
+            int id,
+            RecordPaymentDTO paymentDto,
+            [FromServices] IValidator<RecordPaymentDTO> validator)
+        {
+            if (validator is RecordPaymentValidator typedValidator)
+            {
+                typedValidator.SetInvoiceIdForPayment(id);
+            }
+
+            var validationResult = await validator.ValidateAsync(paymentDto);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    errors = validationResult.Errors.Select(e => new
+                    {
+                        field = e.PropertyName,
+                        message = e.ErrorMessage
+                    })
+                });
+            }
+
+            _logger.LogInformation("Recording payment for invoice ID: {InvoiceId}, Amount: {Amount} for user {UserId}",
+                id, paymentDto.Amount, User.Identity?.Name);
+
+            try
+            {
+                var invoice = await _invoiceService.RecordPaymentAsync(id, paymentDto);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice with ID {InvoiceId} not found for payment", id);
+                    return NotFound($"Invoice with ID {id} not found");
+                }
+
+                return Ok(invoice);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Payment recording failed: {Error}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error recording payment for invoice ID: {InvoiceId} for user {UserId}",
+                    id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while recording the payment" });
+            }
+        }
+
+        /// <summary>
         /// Mark invoice as paid
         /// </summary>
         [HttpPost("{id:int}/payment")]

@@ -306,51 +306,149 @@ public class MarkInvoiceAsPaidValidator : AbstractValidator<MarkInvoiceAsPaidDTO
 
         return paymentDate >= invoice.SentDate.Value.Date;
     }
+}
 
-    /// <summary>
-    /// Validation rules for marking invoice as delivered
-    /// </summary>
-    public class MarkInvoiceAsDeliveredValidator : AbstractValidator<MarkInvoiceAsDeliveredDTO>
+/// <summary>
+/// Validation rules for marking invoice as delivered
+/// </summary>
+public class MarkInvoiceAsDeliveredValidator : AbstractValidator<MarkInvoiceAsDeliveredDTO>
+{
+    private readonly InvoqsDbContext _context;
+    private int _invoiceId;
+
+    public MarkInvoiceAsDeliveredValidator(InvoqsDbContext context)
     {
-        private readonly InvoqsDbContext _context;
-        private int _invoiceId;
-
-        public MarkInvoiceAsDeliveredValidator(InvoqsDbContext context)
-        {
-            _context = context;
+        _context = context;
 
             RuleFor(x => x.DeliveredDate)
-                .NotNull().WithMessage("Delivered date is required")
-                .Must(deliveredDate =>
-                {
-                    var result = deliveredDate <= DateTime.UtcNow.Date;
-                    return result;
-                })
-                .WithMessage("Delivered date cannot be in the future")
-                .Must(deliveredDate =>
-                {
-                    var thirtyDaysAgo = DateTime.UtcNow.Date.AddDays(-30);
-                    var result = deliveredDate >= thirtyDaysAgo;
-                    return result;
-                })
-                .WithMessage("Delivered date cannot be more than 30 days in the past");
+            .NotNull().WithMessage("Delivered date is required")
+            .Must(deliveredDate =>
+            {
+                var result = deliveredDate <= DateTime.UtcNow.Date;
+                return result;
+            })
+            .WithMessage("Delivered date cannot be in the future")
+            .Must(deliveredDate =>
+            {
+                var thirtyDaysAgo = DateTime.UtcNow.Date.AddDays(-30);
+                var result = deliveredDate >= thirtyDaysAgo;
+                return result;
+            })
+            .WithMessage("Delivered date cannot be more than 30 days in the past");
 
-            RuleFor(x => x)
-                .MustAsync(BeInDraftStatus)
-                .WithMessage("Only draft invoices can be marked as delivered")
-                .WithName("Invoice");
-        }
+        RuleFor(x => x)
+            .MustAsync(BeInDraftStatus)
+            .WithMessage("Only draft invoices can be marked as delivered")
+            .WithName("Invoice");
+    }
 
-        public void SetInvoiceIdForDelivered(int invoiceId)
+    public void SetInvoiceIdForDelivered(int invoiceId)
+    {
+        _invoiceId = invoiceId;
+    }
+
+    private async Task<bool> BeInDraftStatus(MarkInvoiceAsDeliveredDTO dto, CancellationToken cancellationToken)
+    {
+        var invoice = await _context.Invoices
+            .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
+        return invoice?.Status == InvoiceStatus.Draft;
+    }
+}
+
+/// <summary>
+/// Validation rules for recording a payment
+/// </summary>
+public class RecordPaymentValidator : AbstractValidator<RecordPaymentDTO>
+{
+    private readonly InvoqsDbContext _context;
+    private int _invoiceId;
+
+    public RecordPaymentValidator(InvoqsDbContext context)
+    {
+        _context = context;
+
+        RuleFor(x => x.Amount)
+            .GreaterThan(0).WithMessage("Payment amount must be greater than zero")
+            .PrecisionScale(10, 2, false).WithMessage("Payment amount cannot have more than 2 decimal places")
+            .MustAsync(NotExceedRemainingAmount).WithMessage("Payment amount cannot exceed remaining balance");
+
+        RuleFor(x => x.PaymentDate)
+            .NotNull().WithMessage("Payment date is required")
+            .Must(paymentDate => paymentDate <= DateTime.UtcNow.Date)
+            .WithMessage("Payment date cannot be in the future")
+            .Must(paymentDate => paymentDate >= DateTime.UtcNow.Date.AddYears(-1))
+            .WithMessage("Payment date cannot be more than 1 year in the past");
+
+        RuleFor(x => x.PaymentMethod)
+            .NotEmpty().WithMessage("Payment method is required")
+            .MaximumLength(50).WithMessage("Payment method cannot exceed 50 characters")
+            .Must(BeValidPaymentMethod).WithMessage("Please select a valid payment method");
+
+        RuleFor(x => x.PaymentReference)
+            .MaximumLength(100).WithMessage("Payment reference cannot exceed 100 characters")
+            .When(x => !string.IsNullOrWhiteSpace(x.PaymentReference));
+
+        RuleFor(x => x.Notes)
+            .MaximumLength(500).WithMessage("Notes cannot exceed 500 characters")
+            .When(x => !string.IsNullOrWhiteSpace(x.Notes));
+
+        RuleFor(x => x)
+            .MustAsync(BeInValidStatusForPayment)
+            .WithMessage("Only sent, delivered, overdue, or partially paid invoices can receive payments")
+            .WithName("Invoice");
+
+        RuleFor(x => x.PaymentDate)
+            .MustAsync(BeAfterSentDate)
+            .WithMessage("Payment date cannot be before the invoice was sent");
+    }
+
+    public void SetInvoiceIdForPayment(int invoiceId)
+    {
+        _invoiceId = invoiceId;
+    }
+
+    private bool BeValidPaymentMethod(string paymentMethod)
+    {
+        var validMethods = new[]
         {
-            _invoiceId = invoiceId;
-        }
+            "Bank Transfer", "Credit Card", "Debit Card", "Cash", "Cheque",
+            "PayPal", "Stripe", "Direct Debit", "BACS", "Other"
+        };
+        return validMethods.Contains(paymentMethod, StringComparer.OrdinalIgnoreCase);
+    }
 
-        private async Task<bool> BeInDraftStatus(MarkInvoiceAsDeliveredDTO dto, CancellationToken cancellationToken)
-        {
-            var invoice = await _context.Invoices
-                .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
-            return invoice?.Status == InvoiceStatus.Draft;
-        }
+    private async Task<bool> NotExceedRemainingAmount(decimal amount, CancellationToken cancellationToken)
+    {
+        var invoice = await _context.Invoices
+            .Include(i => i.Payments)
+            .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
+
+        if (invoice == null) return false;
+
+        var amountPaid = invoice.Payments?.Where(p => !p.IsDeleted).Sum(p => p.Amount) ?? 0;
+        var remainingAmount = invoice.Total - amountPaid;
+
+        return amount <= remainingAmount;
+    }
+
+    private async Task<bool> BeInValidStatusForPayment(RecordPaymentDTO dto, CancellationToken cancellationToken)
+    {
+        var invoice = await _context.Invoices
+            .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
+
+        return invoice?.Status is InvoiceStatus.Sent
+            or InvoiceStatus.Delivered
+            or InvoiceStatus.Overdue
+            or InvoiceStatus.PartiallyPaid;
+    }
+
+    private async Task<bool> BeAfterSentDate(DateTime paymentDate, CancellationToken cancellationToken)
+    {
+        var invoice = await _context.Invoices
+            .FirstOrDefaultAsync(i => i.Id == _invoiceId, cancellationToken);
+
+        if (invoice?.SentDate == null) return true;
+
+        return paymentDate >= invoice.SentDate.Value.Date;
     }
 }

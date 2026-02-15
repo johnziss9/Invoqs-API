@@ -301,6 +301,7 @@ public class PdfService : IPdfService
                     .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
+                        .ThenInclude(i => i.Payments)
                 .FirstOrDefaultAsync(r => r.Id == receiptId && !r.IsDeleted);
 
             if (receiptEntity == null)
@@ -349,7 +350,7 @@ public class PdfService : IPdfService
                     page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
 
                     page.Header().Element(ComposeReceiptHeader);
-                    page.Content().Element(container => ComposeReceiptContent(container, receipt));
+                    page.Content().Element(container => ComposeReceiptContent(container, receipt, receiptEntity));
                     page.Footer().AlignCenter().Text(x =>
                     {
                         x.Span($"Εκδόθηκε από: {userFullName} • ");
@@ -383,7 +384,7 @@ public class PdfService : IPdfService
         });
     }
 
-    private void ComposeReceiptContent(IContainer container, ReceiptDTO receipt)
+    private void ComposeReceiptContent(IContainer container, ReceiptDTO receipt, Receipt receiptEntity)
     {
         container.PaddingVertical(20).Column(column =>
         {
@@ -575,6 +576,81 @@ public class PdfService : IPdfService
             {
                 _logger.LogError(ex, "Error rendering invoice table in PDF");
                 column.Item().Text($"Error rendering invoices: {ex.Message}").FontColor(Colors.Red.Medium);
+            }
+
+            // Payment History Section - Show detailed payment breakdown for invoices with payments
+            var invoicesWithPayments = receiptEntity.ReceiptInvoices
+                .Where(ri => ri.Invoice?.Payments != null && ri.Invoice.Payments.Any(p => !p.IsDeleted))
+                .ToList();
+
+            if (invoicesWithPayments.Any())
+            {
+                column.Item().PaddingTop(20).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                column.Item().PaddingTop(15).Text("Ιστορικό Πληρωμών").FontSize(12).SemiBold();
+
+                foreach (var receiptInvoice in invoicesWithPayments)
+                {
+                    var invoice = receiptInvoice.Invoice;
+                    var payments = invoice.Payments.Where(p => !p.IsDeleted).OrderBy(p => p.PaymentDate).ToList();
+
+                    if (payments.Any())
+                    {
+                        column.Item().PaddingTop(10).Column(invoicePaymentColumn =>
+                        {
+                            // Invoice header
+                            invoicePaymentColumn.Item().Text($"Τιμολόγιο: {invoice.InvoiceNumber}")
+                                .FontSize(10).SemiBold().FontColor(Colors.Blue.Darken1);
+
+                            // Payment summary
+                            var totalPaid = payments.Sum(p => p.Amount);
+                            invoicePaymentColumn.Item().PaddingTop(2).Text(
+                                $"Πληρωμένο: €{totalPaid:N2} / €{invoice.Total:N2}")
+                                .FontSize(9).SemiBold().FontColor(Colors.Green.Darken1);
+
+                            // Payment breakdown table
+                            invoicePaymentColumn.Item().PaddingTop(5).Table(paymentTable =>
+                            {
+                                paymentTable.ColumnsDefinition(columns =>
+                                {
+                                    columns.RelativeColumn(2); // Date
+                                    columns.RelativeColumn(2); // Amount
+                                    columns.RelativeColumn(3); // Method
+                                    columns.RelativeColumn(2); // Reference
+                                });
+
+                                // Header
+                                paymentTable.Header(header =>
+                                {
+                                    header.Cell().Element(CellStyle).Text("Ημερομηνία").FontSize(8).SemiBold();
+                                    header.Cell().Element(CellStyle).Text("Ποσό").FontSize(8).SemiBold();
+                                    header.Cell().Element(CellStyle).Text("Μέθοδος").FontSize(8).SemiBold();
+                                    header.Cell().Element(CellStyle).Text("Αναφορά").FontSize(8).SemiBold();
+
+                                    static IContainer CellStyle(IContainer container)
+                                    {
+                                        return container.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2)
+                                            .PaddingVertical(3);
+                                    }
+                                });
+
+                                // Payment rows
+                                foreach (var payment in payments)
+                                {
+                                    paymentTable.Cell().Element(CellStyle).Text(payment.PaymentDate.ToString("dd/MM/yyyy")).FontSize(8);
+                                    paymentTable.Cell().Element(CellStyle).Text($"€{payment.Amount:N2}").FontSize(8);
+                                    paymentTable.Cell().Element(CellStyle).Text(TranslatePaymentMethod(payment.PaymentMethod)).FontSize(8);
+                                    paymentTable.Cell().Element(CellStyle).Text(payment.PaymentReference ?? "-").FontSize(7);
+                                }
+
+                                static IContainer CellStyle(IContainer container)
+                                {
+                                    return container.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten3)
+                                        .PaddingVertical(3);
+                                }
+                            });
+                        });
+                    }
+                }
             }
 
             // Total breakdown with discount
