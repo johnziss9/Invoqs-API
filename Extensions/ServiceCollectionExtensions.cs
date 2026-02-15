@@ -47,6 +47,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UpdateInvoiceValidator>();
         services.AddScoped<MarkInvoiceAsSentValidator>();
         services.AddScoped<MarkInvoiceAsPaidValidator>();
+        services.AddScoped<RecordPaymentValidator>();
         services.AddScoped<LoginUserValidator>();
 
         return services;

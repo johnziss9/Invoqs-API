@@ -32,6 +32,10 @@ public class InvoiceDTO
     public string? CancellationNotes { get; set; }
     public bool HasReceipt { get; set; }
 
+    // Payment tracking
+    public decimal AmountPaid { get; set; }
+    public decimal RemainingAmount { get; set; }
+    public List<InvoicePaymentDTO> Payments { get; set; } = new();
 
     // Customer information (included in responses)
     public string CustomerName { get; set; } = string.Empty;
@@ -178,8 +182,36 @@ public class MarkInvoiceAsDeliveredDTO
 }
 
 /// <summary>
+/// Payment transaction for an invoice
+/// </summary>
+public class InvoicePaymentDTO
+{
+    public int Id { get; set; }
+    public int InvoiceId { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime PaymentDate { get; set; }
+    public string PaymentMethod { get; set; } = string.Empty;
+    public string? PaymentReference { get; set; }
+    public string? Notes { get; set; }
+    public DateTime CreatedDate { get; set; }
+}
+
+/// <summary>
+/// Data for recording a payment (full or partial)
+/// </summary>
+public class RecordPaymentDTO
+{
+    public decimal Amount { get; set; }
+    public DateTime PaymentDate { get; set; } = DateTime.Today;
+    public string PaymentMethod { get; set; } = "Bank Transfer";
+    public string? PaymentReference { get; set; }
+    public string? Notes { get; set; }
+}
+
+/// <summary>
 /// Data for marking invoice as paid
 /// </summary>
+[Obsolete("Use RecordPaymentDTO for full payment. This is maintained for backward compatibility.")]
 public class MarkInvoiceAsPaidDTO
 {
     public DateTime PaymentDate { get; set; } = DateTime.Today;

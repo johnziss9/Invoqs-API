@@ -14,6 +14,7 @@ public class InvoqsDbContext : DbContext
     public DbSet<Job> Jobs { get; set; }
     public DbSet<Invoice> Invoices { get; set; }
     public DbSet<InvoiceLineItem> InvoiceLineItems { get; set; }
+    public DbSet<InvoicePayment> InvoicePayments { get; set; }
     public DbSet<User> Users { get; set; }
     public DbSet<Receipt> Receipts { get; set; }
     public DbSet<ReceiptInvoice> ReceiptInvoices { get; set; }
@@ -145,6 +146,24 @@ public class InvoqsDbContext : DbContext
                 .WithMany(i => i.ReceiptInvoices)
                 .HasForeignKey(ri => ri.InvoiceId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // InvoicePayment configuration
+        modelBuilder.Entity<InvoicePayment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasOne(p => p.Invoice)
+                  .WithMany(i => i.Payments)
+                  .HasForeignKey(p => p.InvoiceId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            // Indexes for performance
+            entity.HasIndex(e => e.InvoiceId);
+            entity.HasIndex(e => e.PaymentDate);
         });
     }
 

@@ -49,4 +49,5 @@ public class Invoice
     public virtual Customer Customer { get; set; } = null!;
     public virtual ICollection<InvoiceLineItem> LineItems { get; set; } = new List<InvoiceLineItem>();
     public ICollection<ReceiptInvoice> ReceiptInvoices { get; set; } = new List<ReceiptInvoice>();
+    public ICollection<InvoicePayment> Payments { get; set; } = new List<InvoicePayment>();
 }
