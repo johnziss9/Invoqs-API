@@ -134,6 +134,22 @@ public class ReceiptService : IReceiptService
                 throw new InvalidOperationException("All invoices must be paid and belong to the specified customer");
             }
 
+            // Validate discount if provided
+            if (createDTO.DiscountAmount.HasValue)
+            {
+                if (createDTO.DiscountAmount.Value < 0)
+                {
+                    throw new InvalidOperationException("Discount amount cannot be negative");
+                }
+
+                var calculatedTotal = invoices.Sum(i => i.Total);
+                if (createDTO.DiscountAmount.Value > calculatedTotal)
+                {
+                    throw new InvalidOperationException(
+                        $"Discount amount (€{createDTO.DiscountAmount.Value:N2}) cannot exceed total amount (€{calculatedTotal:N2})");
+                }
+            }
+
             // Create receipt
             var receipt = new Receipt
             {
@@ -163,6 +179,7 @@ public class ReceiptService : IReceiptService
             }
 
             receipt.TotalAmount = totalAmount;
+            receipt.DiscountAmount = createDTO.DiscountAmount ?? 0m;
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();

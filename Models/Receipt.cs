@@ -13,6 +13,9 @@ public class Receipt
     [Column(TypeName = "decimal(10,2)")]
     public decimal TotalAmount { get; set; }
 
+    [Column(TypeName = "decimal(10,2)")]
+    public decimal DiscountAmount { get; set; } = 0m;
+
     public DateTime CreatedDate { get; set; }
 
     public DateTime? UpdatedDate { get; set; }

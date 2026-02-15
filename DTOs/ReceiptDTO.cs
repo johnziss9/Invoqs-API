@@ -1,4 +1,5 @@
 using Invoqs.API.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace Invoqs.API.DTOs;
 
@@ -17,6 +18,8 @@ public class ReceiptDTO
     public string CustomerPhone { get; set; } = string.Empty;
     public string? CustomerVatNumber { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public decimal AmountToPay => TotalAmount - DiscountAmount;
     public DateTime CreatedDate { get; set; }
     public bool IsSent { get; set; }
     public DateTime? SentDate { get; set; }
@@ -35,6 +38,8 @@ public class ReceiptSummaryDTO
     public int CustomerId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public decimal AmountToPay { get; set; }
     public int InvoiceCount { get; set; }
     public DateTime CreatedDate { get; set; }
 }
@@ -50,6 +55,7 @@ public class ReceiptInvoiceDTO
     public decimal AllocatedAmount { get; set; }
     public DateTime? PaymentDate { get; set; }
     public string? PaymentMethod { get; set; }
+    public string? PaymentReference { get; set; }
 }
 
 /// <summary>
@@ -60,6 +66,9 @@ public class CreateReceiptDTO
     public int CustomerId { get; set; }
 
     public List<int> InvoiceIds { get; set; } = new();
+
+    [Range(0, double.MaxValue, ErrorMessage = "Discount must be non-negative")]
+    public decimal? DiscountAmount { get; set; }
 }
 
 /// <summary>

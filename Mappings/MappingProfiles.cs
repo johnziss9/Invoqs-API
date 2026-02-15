@@ -195,7 +195,8 @@ public class MappingProfiles : Profile
             .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice.InvoiceNumber))
             .ForMember(dest => dest.InvoiceDate, opt => opt.MapFrom(src => src.Invoice.CreatedDate))
             .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => src.Invoice.PaymentDate))
-            .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.Invoice.PaymentMethod));
+            .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.Invoice.PaymentMethod))
+            .ForMember(dest => dest.PaymentReference, opt => opt.MapFrom(src => src.Invoice.PaymentReference));
     }
 }
 

@@ -319,6 +319,7 @@ public class PdfService : IPdfService
                 CustomerPhone = receiptEntity.Customer.Phone ?? "",
                 CustomerVatNumber = receiptEntity.Customer.VatNumber,
                 TotalAmount = receiptEntity.TotalAmount,
+                DiscountAmount = receiptEntity.DiscountAmount,
                 CreatedDate = receiptEntity.CreatedDate,
                 IsSent = receiptEntity.IsSent,
                 SentDate = receiptEntity.SentDate,
@@ -329,7 +330,8 @@ public class PdfService : IPdfService
                     InvoiceDate = ri.Invoice.CreatedDate,
                     AllocatedAmount = ri.AllocatedAmount,
                     PaymentDate = ri.Invoice.PaymentDate,
-                    PaymentMethod = ri.Invoice.PaymentMethod
+                    PaymentMethod = ri.Invoice.PaymentMethod,
+                    PaymentReference = ri.Invoice.PaymentReference
                 }).ToList()
             };
 
@@ -456,7 +458,7 @@ public class PdfService : IPdfService
                 table.Cell().Element(CellStyle).Text("1");
                 table.Cell().Element(CellStyle).Text(receipt.CreatedDate.ToString("dd/MM/yy"));
                 table.Cell().Element(CellStyle).Text("Πληρωμή Ληφθείσα");
-                table.Cell().Element(CellStyle).AlignRight().Text($"€ {receipt.TotalAmount:N2}");
+                table.Cell().Element(CellStyle).AlignRight().Text($"€ {(receipt.TotalAmount - receipt.DiscountAmount):N2}");
 
                 static IContainer CellStyle(IContainer container)
                 {
@@ -490,7 +492,7 @@ public class PdfService : IPdfService
                 summaryColumn.Item().Row(row =>
                 {
                     row.AutoItem().Width(100).Text("Σύνολο Πληρωμής").FontSize(11).SemiBold();
-                    row.AutoItem().Text($"€ {receipt.TotalAmount:N2}").FontSize(11).SemiBold();
+                    row.AutoItem().Text($"€ {(receipt.TotalAmount - receipt.DiscountAmount):N2}").FontSize(11).SemiBold();
                 });
             });
 
@@ -547,7 +549,15 @@ public class PdfService : IPdfService
                             table.Cell().Element(CellStyle).Text(invoice.InvoiceDate.ToString("dd/MM/yy"));
                             table.Cell().Element(CellStyle).Text(invoice.InvoiceNumber ?? "Μ/Δ");
                             table.Cell().Element(CellStyle).Text(invoice.PaymentDate?.ToString("dd/MM/yy") ?? "-");
-                            table.Cell().Element(CellStyle).Text(TranslatePaymentMethod(invoice.PaymentMethod));
+
+                            // Payment Method with Reference if available
+                            var paymentMethodText = TranslatePaymentMethod(invoice.PaymentMethod);
+                            if (!string.IsNullOrWhiteSpace(invoice.PaymentReference))
+                            {
+                                paymentMethodText += $"\n({invoice.PaymentReference})";
+                            }
+                            table.Cell().Element(CellStyle).Text(paymentMethodText);
+
                             table.Cell().Element(CellStyle).AlignRight().Text($"€ {invoice.AllocatedAmount:N2}");
                             rowNum++;
                         }
@@ -567,11 +577,39 @@ public class PdfService : IPdfService
                 column.Item().Text($"Error rendering invoices: {ex.Message}").FontColor(Colors.Red.Medium);
             }
 
-            // Allocated Total
-            column.Item().PaddingTop(10).AlignRight().Row(row =>
+            // Total breakdown with discount
+            column.Item().PaddingTop(10).AlignRight().Column(totalColumn =>
             {
-                row.AutoItem().Width(120).Text("Κατανεμημένο Σύνολο").FontSize(11).SemiBold();
-                row.AutoItem().Text($"€ {receipt.TotalAmount:N2}").FontSize(11).SemiBold();
+                if (receipt.DiscountAmount > 0)
+                {
+                    // Σύνολο Τιμολογίων
+                    totalColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Σύνολο Τιμολογίων").FontSize(11);
+                        row.AutoItem().Text($"€ {receipt.TotalAmount:N2}").FontSize(11);
+                    });
+                    // Έκπτωση
+                    totalColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Έκπτωση").FontSize(11).FontColor(Colors.Red.Medium);
+                        row.AutoItem().Text($"-€ {receipt.DiscountAmount:N2}").FontSize(11).FontColor(Colors.Red.Medium);
+                    });
+                    // Ποσό Πληρωμής
+                    totalColumn.Item().PaddingTop(5).Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Ποσό Πληρωμής").FontSize(12).SemiBold();
+                        row.AutoItem().Text($"€ {(receipt.TotalAmount - receipt.DiscountAmount):N2}").FontSize(12).SemiBold();
+                    });
+                }
+                else
+                {
+                    // No discount - show simple total
+                    totalColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Κατανεμημένο Σύνολο").FontSize(11).SemiBold();
+                        row.AutoItem().Text($"€ {receipt.TotalAmount:N2}").FontSize(11).SemiBold();
+                    });
+                }
             });
         });
     }
