@@ -96,7 +96,8 @@ public class PdfService : IPdfService
                             row.RelativeItem().Column(col =>
                             {
                                 col.Item().Text("ΕΚΔΟΤΗΣ").FontSize(10).SemiBold();
-                                col.Item().PaddingTop(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                                col.Item().PaddingTop(15).Text("A. SAVVA SERVICES COMPANY LTD").FontSize(9);
+                                col.Item().PaddingTop(2).LineHorizontal(1).LineColor(Colors.Grey.Medium);
                                 col.Item().PaddingTop(2).Text("ISSUED BY").FontSize(8).FontColor(Colors.Grey.Medium);
                             });
 
@@ -107,7 +108,8 @@ public class PdfService : IPdfService
                             row.RelativeItem().Column(col =>
                             {
                                 col.Item().Text("ΠΑΡΑΛΗΠΤΗΣ").FontSize(10).SemiBold();
-                                col.Item().PaddingTop(5).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+                                col.Item().PaddingTop(15).Text(" ").FontSize(9);
+                                col.Item().PaddingTop(2).LineHorizontal(1).LineColor(Colors.Grey.Medium);
                                 col.Item().PaddingTop(2).Text("RECEIVED BY").FontSize(8).FontColor(Colors.Grey.Medium);
                             });
                         });
@@ -141,6 +143,7 @@ public class PdfService : IPdfService
             row.RelativeItem(2).Column(column =>
             {
                 column.Item().Height(60).Image("wwwroot/images/company_logo.jpeg");
+                column.Item().PaddingTop(5).Text("A. SAVVA SERVICES COMPANY LTD").FontSize(9).SemiBold();
                 column.Item().PaddingTop(5).Text("Ανδρέα Παναγίδη, 5").FontSize(9);
                 column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(9);
                 column.Item().Text("Phone: +357 99576190").FontSize(9);
@@ -284,6 +287,7 @@ public class PdfService : IPdfService
                 termsColumn.Item().Text("Όροι Πληρωμής:").SemiBold();
                 termsColumn.Item().Text($"Πληρωμή εντός {invoice.PaymentTermsDays} ημερών").FontSize(9);
                 termsColumn.Item().PaddingTop(5).Text("Στοιχεία Τράπεζας:").SemiBold();
+                termsColumn.Item().Text("A. SAVVA SERVICES COMPANY LTD").FontSize(9);
                 termsColumn.Item().Text("Τράπεζα: Eurobank").FontSize(9);
                 termsColumn.Item().Text("IBAN: CY39 0050 0349 0003 4901 H993 7001").FontSize(9);
             });
@@ -375,6 +379,7 @@ public class PdfService : IPdfService
             row.RelativeItem().Column(column =>
             {
                 column.Item().Height(60).Image("wwwroot/images/company_logo.jpeg");
+                column.Item().PaddingTop(5).Text("A. SAVVA SERVICES COMPANY LTD").FontSize(8).SemiBold();
                 column.Item().PaddingTop(5).Text("Ανδρέα Παναγίδη, 5").FontSize(8);
                 column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(8);
                 column.Item().Text("Phone: +357 99576190").FontSize(8);
