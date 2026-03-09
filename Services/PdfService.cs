@@ -279,6 +279,8 @@ public class PdfService : IPdfService
                 termsColumn.Item().Text("A. SAVVA SERVICES COMPANY LTD").FontSize(9);
                 termsColumn.Item().Text("Τράπεζα: Eurobank").FontSize(9);
                 termsColumn.Item().Text("IBAN: CY39 0050 0349 0003 4901 H993 7001").FontSize(9);
+                termsColumn.Item().Text("Swift: HEBACY2N").FontSize(9);
+                termsColumn.Item().Text("Αριθμός Λογαριασμού: 349-01-H99340-01").FontSize(9);
             });
         });
     }
