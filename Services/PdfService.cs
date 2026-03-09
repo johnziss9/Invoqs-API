@@ -192,11 +192,6 @@ public class PdfService : IPdfService
                         r.AutoItem().Width(100).Text("Ημερομηνία Λήξης:").SemiBold();
                         r.AutoItem().Text(invoice.DueDate?.ToString("dd MMM yyyy") ?? "Μ/Δ");
                     });
-                    col.Item().Row(r =>
-                    {
-                        r.AutoItem().Width(100).Text("Κατάσταση:").SemiBold();
-                        r.AutoItem().Text(invoice.Status.ToString());
-                    });
                 });
             });
 
@@ -208,8 +203,6 @@ public class PdfService : IPdfService
                     columns.RelativeColumn(2.5f); // Description
                     columns.RelativeColumn(2);    // Address
                     columns.RelativeColumn(0.8f); // Date
-                    columns.RelativeColumn(1);    // Quantity
-                    columns.RelativeColumn(1);    // Unit Price
                     columns.RelativeColumn(1);    // Total
                 });
 
@@ -219,9 +212,7 @@ public class PdfService : IPdfService
                     header.Cell().Element(CellStyle).Text("Περιγραφή").SemiBold();
                     header.Cell().Element(CellStyle).Text("Διεύθυνση").SemiBold();
                     header.Cell().Element(CellStyle).Text("Ημ/νία").SemiBold();
-                    header.Cell().Element(CellStyle).AlignCenter().Text("Ποσότητα").SemiBold();
-                    header.Cell().Element(CellStyle).AlignRight().Text("Τιμή Μονάδας").SemiBold();
-                    header.Cell().Element(CellStyle).AlignRight().Text("Σύνολο").SemiBold();
+                    header.Cell().Element(CellStyle).AlignRight().Text("Ποσό").SemiBold();
 
                     static IContainer CellStyle(IContainer container)
                     {
@@ -235,12 +226,10 @@ public class PdfService : IPdfService
                 {
                     var address = item.JobAddress ?? "Μ/Δ";
                     var truncatedAddress = address.Length > 40 ? address.Substring(0, 37) + "..." : address;
-                    
+
                     table.Cell().Element(CellStyle).Text(item.Description ?? "Μ/Δ");
                     table.Cell().Element(CellStyle).Text(truncatedAddress);
                     table.Cell().Element(CellStyle).Text(item.JobDate?.ToString("dd/MM/yy") ?? "Μ/Δ");
-                    table.Cell().Element(CellStyle).AlignCenter().Text(item.Quantity.ToString());
-                    table.Cell().Element(CellStyle).AlignRight().Text($"€{item.UnitPrice:N2}");
                     table.Cell().Element(CellStyle).AlignRight().Text($"€{item.LineTotal:N2}");
 
                     static IContainer CellStyle(IContainer container)

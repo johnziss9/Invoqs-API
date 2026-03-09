@@ -101,6 +101,7 @@ public class DashboardService : IDashboardService
             var sandDeliveries = jobs.Count(j => j.Type == JobType.SandDelivery);
             var forkLiftServices = jobs.Count(j => j.Type == JobType.ForkLiftService);
             var transfers = jobs.Count(j => j.Type == JobType.Transfer);
+            var sellForklifts = jobs.Count(j => j.Type == JobType.SellForklift);
 
             return new JobMetricsDTO
             {
@@ -109,7 +110,8 @@ public class DashboardService : IDashboardService
                 SkipRentals = skipRentals,
                 SandDeliveries = sandDeliveries,
                 ForkLiftServices = forkLiftServices,
-                Transfers = transfers
+                Transfers = transfers,
+                SellForklifts = sellForklifts
             };
         }
         catch (Exception ex)
