@@ -5,5 +5,6 @@ public enum JobType
     SkipRental = 0,
     SandDelivery = 1,
     ForkLiftService = 2,
-    Transfer = 3
+    Transfer = 3,
+    SellForklift = 4
 }
