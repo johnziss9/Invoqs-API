@@ -700,4 +700,271 @@ public class PdfService : IPdfService
             _ => method // Return as-is if not found (in case it's already in Greek)
         };
     }
+
+    public async Task<byte[]> GenerateStatementPdfAsync(int statementId)
+    {
+        try
+        {
+            var statement = await _context.Statements
+                .FirstOrDefaultAsync(s => s.Id == statementId && !s.IsDeleted);
+
+            if (statement == null)
+            {
+                throw new InvalidOperationException($"Statement with ID {statementId} not found");
+            }
+
+            var allInvoices = await _context.Invoices
+                .Include(i => i.Customer)
+                .Where(i => !i.IsDeleted &&
+                           i.CreatedDate >= statement.StartDate &&
+                           i.CreatedDate <= statement.EndDate)
+                .OrderBy(i => i.CreatedDate)
+                .ToListAsync();
+
+            var activeInvoices = allInvoices.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
+            var cancelledInvoices = allInvoices.Where(i => i.Status == InvoiceStatus.Cancelled).ToList();
+
+            var pdfBytes = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Element(ComposeStatementHeader);
+                    page.Content().Element(container => ComposeStatementContent(container, statement, activeInvoices, cancelledInvoices));
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Σελίδα ");
+                        x.CurrentPageNumber();
+                        x.Span(" από ");
+                        x.TotalPages();
+                        x.Span(" • ");
+                        x.Span(DateTime.UtcNow.ToString("dd/MM/yy HH:mm"));
+                    });
+                });
+            }).GeneratePdf();
+
+            return pdfBytes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating statement PDF for statement ID: {StatementId}", statementId);
+            throw;
+        }
+    }
+
+    private void ComposeStatementHeader(IContainer container)
+    {
+        container.Row(row =>
+        {
+            row.RelativeItem().Column(column =>
+            {
+                column.Item().Height(60).Image("wwwroot/images/company_logo.jpeg");
+                column.Item().PaddingTop(5).Text("A. SAVVA SERVICES COMPANY LTD").FontSize(8).SemiBold();
+                column.Item().PaddingTop(5).Text("Ανδρέα Παναγίδη, 5").FontSize(8);
+                column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(8);
+                column.Item().Text("Phone: +357 99576190").FontSize(8);
+                column.Item().Text("Email: antreasforklift@gmail.com").FontSize(8);
+                column.Item().Text("ΑΦΜ: CY60172438U").FontSize(8);
+            });
+        });
+    }
+
+    private void ComposeStatementContent(IContainer container, Statement statement, List<Invoice> activeInvoices, List<Invoice> cancelledInvoices)
+    {
+        container.PaddingVertical(20).Column(column =>
+        {
+            column.Spacing(15);
+
+            column.Item().AlignCenter().Text("Κατάσταση Λογιστηρίου").FontSize(24).SemiBold();
+            column.Item().AlignCenter().Text($"Accounting Statement").FontSize(14).Light();
+
+            column.Item().Row(row =>
+            {
+                row.RelativeItem().Column(col =>
+                {
+                    col.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(100).Text("Αριθμός:").SemiBold();
+                        r.AutoItem().Text(statement.StatementNumber);
+                    });
+                    col.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(100).Text("Ημερομηνία:").SemiBold();
+                        r.AutoItem().Text(statement.CreatedDate.ToString("dd/MM/yy"));
+                    });
+                });
+
+                row.RelativeItem().AlignRight().Column(col =>
+                {
+                    col.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(80).Text("Περίοδος:").SemiBold();
+                        r.AutoItem().Text($"{statement.StartDate:dd/MM/yy} - {statement.EndDate:dd/MM/yy}");
+                    });
+                });
+            });
+
+            column.Item().PaddingTop(10).LineHorizontal(1).LineColor(Colors.Grey.Medium);
+
+            if (activeInvoices.Any())
+            {
+                column.Item().PaddingTop(15).Text("Τιμολόγια (Active Invoices)").FontSize(12).SemiBold();
+
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(80);
+                        columns.ConstantColumn(70);
+                        columns.RelativeColumn(2);
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(80);
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(HeaderCellStyle).Text("Αρ. Τιμολογίου").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Ημερομηνία").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Πελάτης").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Ποσό (συμπ. ΦΠΑ)").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("ΦΠΑ").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Κατάσταση").FontSize(8).SemiBold();
+
+                        static IContainer HeaderCellStyle(IContainer container)
+                        {
+                            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten1).PaddingVertical(5).PaddingHorizontal(2);
+                        }
+                    });
+
+                    foreach (var invoice in activeInvoices)
+                    {
+                        table.Cell().Element(BodyCellStyle).Text(invoice.InvoiceNumber).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(invoice.CreatedDate.ToString("dd/MM/yy")).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(invoice.Customer.Name).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.Total:N2}").FontSize(8);
+                        table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.VatAmount:N2}").FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(TranslateInvoiceStatus(invoice.Status)).FontSize(7);
+
+                        static IContainer BodyCellStyle(IContainer container)
+                        {
+                            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingVertical(3).PaddingHorizontal(2);
+                        }
+                    }
+                });
+
+                column.Item().PaddingTop(10).AlignRight().Column(summaryColumn =>
+                {
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Σύνολο Ενεργών:").SemiBold();
+                        row.AutoItem().Text($"€{statement.TotalAmount:N2} (συμπ. ΦΠΑ)").SemiBold();
+                    });
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Σύνολο ΦΠΑ:").SemiBold();
+                        row.AutoItem().Text($"€{statement.TotalVatAmount:N2}").SemiBold();
+                    });
+                });
+            }
+
+            if (cancelledInvoices.Any())
+            {
+                column.Item().PaddingTop(20).Text("Ακυρωμένα Τιμολόγια (Cancelled Invoices)").FontSize(12).SemiBold();
+
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(80);
+                        columns.ConstantColumn(70);
+                        columns.RelativeColumn(2);
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(80);
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(HeaderCellStyle).Text("Αρ. Τιμολογίου").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Ημερομηνία").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Πελάτης").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Ποσό (συμπ. ΦΠΑ)").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("ΦΠΑ").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Κατάσταση").FontSize(8).SemiBold();
+
+                        static IContainer HeaderCellStyle(IContainer container)
+                        {
+                            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten1).PaddingVertical(5).PaddingHorizontal(2);
+                        }
+                    });
+
+                    foreach (var invoice in cancelledInvoices)
+                    {
+                        table.Cell().Element(BodyCellStyle).Text(invoice.InvoiceNumber).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(invoice.CreatedDate.ToString("dd/MM/yy")).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(invoice.Customer.Name).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.Total:N2}").FontSize(8);
+                        table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.VatAmount:N2}").FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(TranslateInvoiceStatus(invoice.Status)).FontSize(7);
+
+                        static IContainer BodyCellStyle(IContainer container)
+                        {
+                            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingVertical(3).PaddingHorizontal(2);
+                        }
+                    }
+                });
+
+                column.Item().PaddingTop(10).AlignRight().Column(summaryColumn =>
+                {
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(140).Text("Σύνολο Ακυρωμένων:").SemiBold();
+                        row.AutoItem().Text($"€{statement.CancelledAmount:N2} (συμπ. ΦΠΑ)").SemiBold();
+                    });
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(140).Text("Σύνολο ΦΠΑ Ακυρωμένων:").SemiBold();
+                        row.AutoItem().Text($"€{statement.CancelledVatAmount:N2}").SemiBold();
+                    });
+                });
+            }
+
+            column.Item().PaddingTop(20).LineHorizontal(2).LineColor(Colors.Grey.Medium);
+
+            column.Item().PaddingTop(10).AlignRight().Column(grandTotalColumn =>
+            {
+                grandTotalColumn.Item().Row(row =>
+                {
+                    row.AutoItem().Width(140).Text("ΓΕΝΙΚΟ ΣΥΝΟΛΟ:").FontSize(14).SemiBold();
+                    row.AutoItem().Text($"€{statement.TotalAmount:N2} (συμπ. ΦΠΑ)").FontSize(14).SemiBold();
+                });
+            });
+
+            column.Item().PaddingTop(20).Text($"Σύνολο Τιμολογίων: {statement.InvoiceCount}").FontSize(9);
+            if (statement.CancelledInvoiceCount > 0)
+            {
+                column.Item().Text($"Σύνολο Ακυρωμένων: {statement.CancelledInvoiceCount}").FontSize(9);
+            }
+        });
+    }
+
+    private string TranslateInvoiceStatus(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => "Πρόχειρο",
+            InvoiceStatus.Sent => "Απεσταλμένο",
+            InvoiceStatus.Delivered => "Παραδοθέν",
+            InvoiceStatus.PartiallyPaid => "Μερικώς Πληρωμένο",
+            InvoiceStatus.Paid => "Πληρωμένο",
+            InvoiceStatus.Overdue => "Ληξιπρόθεσμο",
+            InvoiceStatus.Cancelled => "Ακυρωμένο",
+            _ => status.ToString()
+        };
+    }
 }

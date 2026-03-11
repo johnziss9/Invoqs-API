@@ -177,5 +177,29 @@ namespace Invoqs.API.Controllers
                 return StatusCode(500, new { error = "An error occurred while sending the receipt" });
             }
         }
+
+        /// <summary>
+        /// Mark receipt as delivered (without sending email - for manually handed receipts)
+        /// </summary>
+        [HttpPut("{id:int}/mark-as-delivered")]
+        public async Task<IActionResult> MarkReceiptAsDelivered(int id)
+        {
+            try
+            {
+                var result = await _receiptService.MarkReceiptAsDeliveredAsync(id);
+
+                if (!result)
+                {
+                    return NotFound(new { error = $"Receipt with ID {id} not found" });
+                }
+
+                return Ok(new { message = "Receipt marked as delivered successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error marking receipt with ID: {ReceiptId} as delivered for user {UserId}", id, User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while marking the receipt as delivered" });
+            }
+        }
     }
 }

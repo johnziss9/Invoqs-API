@@ -23,6 +23,8 @@ public class ReceiptDTO
     public DateTime CreatedDate { get; set; }
     public bool IsSent { get; set; }
     public DateTime? SentDate { get; set; }
+    public bool IsDelivered { get; set; }
+    public DateTime? DeliveredDate { get; set; }
 
     // Invoices included in this receipt
     public List<ReceiptInvoiceDTO> Invoices { get; set; } = new();

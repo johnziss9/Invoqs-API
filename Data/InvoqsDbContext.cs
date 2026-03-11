@@ -18,6 +18,7 @@ public class InvoqsDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Receipt> Receipts { get; set; }
     public DbSet<ReceiptInvoice> ReceiptInvoices { get; set; }
+    public DbSet<Statement> Statements { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -164,6 +165,15 @@ public class InvoqsDbContext : DbContext
             // Indexes for performance
             entity.HasIndex(e => e.InvoiceId);
             entity.HasIndex(e => e.PaymentDate);
+        });
+
+        // Statement configuration
+        modelBuilder.Entity<Statement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasIndex(e => e.StatementNumber).IsUnique();
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
     }
 

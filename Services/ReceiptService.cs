@@ -285,6 +285,36 @@ public class ReceiptService : IReceiptService
         }
     }
 
+    public async Task<bool> MarkReceiptAsDeliveredAsync(int receiptId)
+    {
+        try
+        {
+            var receipt = await _context.Receipts
+                .FirstOrDefaultAsync(r => r.Id == receiptId && !r.IsDeleted);
+
+            if (receipt == null)
+            {
+                return false;
+            }
+
+            // Update receipt status - mark as delivered (manually handed over)
+            receipt.IsDelivered = true;
+            receipt.DeliveredDate = DateTime.UtcNow;
+            receipt.UpdatedDate = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Receipt {ReceiptNumber} manually marked as delivered", receipt.ReceiptNumber);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error marking receipt ID: {ReceiptId} as delivered", receiptId);
+            throw;
+        }
+    }
+
     private async Task<string> GenerateReceiptNumberAsync()
     {
         var currentYear = DateTime.UtcNow.Year;

@@ -367,7 +367,7 @@ public class EmailService : IEmailService
                 <div class='content'>
                     <p>Αγαπητέ/ή {receipt.CustomerName},</p>
                     <p>Σας ευχαριστούμε για την πληρωμή σας. Αυτό το email επιβεβαιώνει ότι έχουμε λάβει την πληρωμή σας.</p>
-                    
+
                     <div class='receipt-details'>
                         <div class='detail-row'>
                             <span class='detail-label'>Αριθμός Απόδειξης:</span>
@@ -378,9 +378,123 @@ public class EmailService : IEmailService
                             <span class='detail-value amount'>€{receipt.TotalAmount:N2}</span>
                         </div>
                     </div>
-                    
+
                     <p>Η απόδειξη πληρωμής σας είναι συνημμένη σε αυτό το email για τα αρχεία σας.</p>
                     <p>Σας ευχαριστούμε για την συνεργασία σας!</p>
+                    <p>Με εκτίμηση,<br>ANDREAS SAVVA SERVICES COMPANY LTD</p>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated email. Please do not reply directly to this message.</p>
+                    <p>&copy; {DateTime.Now.Year} Invoqs. All rights reserved.</p>
+                </div>
+            </body>
+            </html>";
+    }
+
+    public async Task<EmailResponseDto> SendStatementEmailAsync(StatementDTO statement, byte[] pdfData, List<string> recipientEmails)
+    {
+        try
+        {
+            _logger.LogInformation("Starting to send statement email for Statement ID: {StatementId}", statement.Id);
+
+            if (statement == null)
+            {
+                _logger.LogWarning("Statement is null");
+                return new EmailResponseDto
+                {
+                    Success = false,
+                    ErrorMessage = "Statement not found"
+                };
+            }
+
+            if (recipientEmails == null || !recipientEmails.Any() || recipientEmails.All(e => string.IsNullOrWhiteSpace(e)))
+            {
+                _logger.LogWarning("No valid recipient emails provided for Statement ID: {StatementId}", statement.Id);
+                return new EmailResponseDto
+                {
+                    Success = false,
+                    ErrorMessage = "No valid recipient emails provided"
+                };
+            }
+
+            var emailMessage = new EmailMessageDto
+            {
+                ToEmail = recipientEmails[0],
+                ToName = "Accountant",
+                BccEmails = recipientEmails.Skip(1).ToList(),
+                Subject = $"Κατάσταση Λογιστηρίου #{statement.StatementNumber}",
+                HtmlBody = GenerateStatementEmailHtml(statement),
+                AttachmentData = pdfData,
+                AttachmentFileName = $"Statement_{statement.StatementNumber}.pdf"
+            };
+
+            return await SendEmailWithRetryAsync(emailMessage, 3);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send statement email for Statement ID: {StatementId}", statement?.Id);
+            return new EmailResponseDto
+            {
+                Success = false,
+                ErrorMessage = $"Failed to send email: {ex.Message}"
+            };
+        }
+    }
+
+    private string GenerateStatementEmailHtml(StatementDTO statement)
+    {
+        return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #3b82f6; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                    .content {{ background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }}
+                    .statement-details {{ background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; }}
+                    .detail-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
+                    .detail-label {{ font-weight: bold; color: #6b7280; }}
+                    .detail-value {{ color: #111827; }}
+                    .amount {{ font-size: 24px; font-weight: bold; color: #3b82f6; }}
+                    .footer {{ background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-radius: 0 0 8px 8px; }}
+                    .document-icon {{ font-size: 48px; }}
+                </style>
+            </head>
+            <body>
+                <div class='header'>
+                    <div class='document-icon'>📊</div>
+                    <h1>Κατάσταση Λογιστηρίου</h1>
+                </div>
+                <div class='content'>
+                    <p>Η κατάσταση λογιστηρίου είναι έτοιμη.</p>
+
+                    <div class='statement-details'>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Αριθμός Κατάστασης:</span>&nbsp;
+                            <span class='detail-value'>{statement.StatementNumber}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Περίοδος:</span>&nbsp;
+                            <span class='detail-value'>{statement.StartDate:dd/MM/yyyy} - {statement.EndDate:dd/MM/yyyy}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Συνολικό Ποσό:</span>&nbsp;
+                            <span class='detail-value amount'>€{statement.TotalAmount:N2}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Αριθμός Τιμολογίων:</span>&nbsp;
+                            <span class='detail-value'>{statement.InvoiceCount}</span>
+                        </div>
+                        {(statement.CancelledInvoiceCount > 0 ? $@"
+                        <div class='detail-row'>
+                            <span class='detail-label'>Ακυρωμένα Τιμολόγια:</span>&nbsp;
+                            <span class='detail-value'>{statement.CancelledInvoiceCount}</span>
+                        </div>" : "")}
+                    </div>
+
+                    <p>Η πλήρης κατάσταση είναι συνημμένη σε αυτό το email.</p>
                     <p>Με εκτίμηση,<br>ANDREAS SAVVA SERVICES COMPANY LTD</p>
                 </div>
                 <div class='footer'>

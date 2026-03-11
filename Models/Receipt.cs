@@ -23,8 +23,12 @@ public class Receipt
     public bool IsDeleted { get; set; } = false;
 
     public bool IsSent { get; set; } = false;
-    
+
     public DateTime? SentDate { get; set; }
+
+    public bool IsDelivered { get; set; } = false;
+
+    public DateTime? DeliveredDate { get; set; }
 
     // Navigation properties
     public virtual Customer Customer { get; set; } = null!;

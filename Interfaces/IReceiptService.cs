@@ -10,4 +10,5 @@ public interface IReceiptService
     Task<ReceiptDTO> CreateReceiptAsync(CreateReceiptDTO createDTO);
     Task<bool> DeleteReceiptAsync(int id);
     Task<bool> SendReceiptAsync(int receiptId, List<string>? recipientEmails = null);
+    Task<bool> MarkReceiptAsDeliveredAsync(int receiptId);
 }
