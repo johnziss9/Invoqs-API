@@ -148,7 +148,7 @@ public class PdfService : IPdfService
                 column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(9);
                 column.Item().Text("Phone: +357 99576190").FontSize(9);
                 column.Item().Text("Email: antreasforklift@gmail.com").FontSize(9);
-                column.Item().Text("ΑΦΜ: CY60172438U").FontSize(9);
+                column.Item().Text("VAT: CY60172438U").FontSize(9);
             });
 
             row.RelativeItem(1).AlignRight().Column(column =>
@@ -375,7 +375,7 @@ public class PdfService : IPdfService
                 column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(8);
                 column.Item().Text("Phone: +357 99576190").FontSize(8);
                 column.Item().Text("Email: antreasforklift@gmail.com").FontSize(8);
-                column.Item().Text("ΑΦΜ: CY60172438U").FontSize(8);
+                column.Item().Text("VAT: CY60172438U").FontSize(8);
             });
         });
     }
@@ -768,7 +768,7 @@ public class PdfService : IPdfService
                 column.Item().Text("Αραδίππου, 7103, Λάρνακα, Κύπρος").FontSize(8);
                 column.Item().Text("Phone: +357 99576190").FontSize(8);
                 column.Item().Text("Email: antreasforklift@gmail.com").FontSize(8);
-                column.Item().Text("ΑΦΜ: CY60172438U").FontSize(8);
+                column.Item().Text("VAT: CY60172438U").FontSize(8);
             });
         });
     }
