@@ -81,6 +81,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IReceiptService, ReceiptService>();
         services.AddScoped<IStatementService, StatementService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IBulkEmailLogService, BulkEmailLogService>();
 
         return services;
     }
