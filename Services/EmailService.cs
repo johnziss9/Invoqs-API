@@ -643,6 +643,66 @@ public class EmailService : IEmailService
             </html>";
     }
 
+    public async Task<EmailResponseDto> SendCustomEmailAsync(string toEmail, string toName, string subject, string body, string language = "el")
+    {
+        if (string.IsNullOrWhiteSpace(toEmail))
+            return new EmailResponseDto { Success = false, ErrorMessage = "No email address provided" };
+
+        var emailMessage = new EmailMessageDto
+        {
+            ToEmail = toEmail,
+            ToName = toName,
+            Subject = subject,
+            HtmlBody = GenerateCustomEmailHtml(toName, body, language)
+        };
+
+        return await SendEmailWithRetryAsync(emailMessage, 3);
+    }
+
+    private string GenerateCustomEmailHtml(string recipientName, string plainTextBody, string language)
+    {
+        var encodedBody = System.Net.WebUtility.HtmlEncode(plainTextBody).Replace("\n", "<br>");
+        var encodedName = System.Net.WebUtility.HtmlEncode(recipientName);
+
+        var isGreek = language != "en";
+        var greeting = isGreek ? $"Αγαπητέ/ή {encodedName}," : $"Dear {encodedName},";
+        var signOff = isGreek ? "Με εκτίμηση," : "Kind regards,";
+        var footerNote = isGreek
+            ? "Αυτό είναι ένα αυτοματοποιημένο email. Παρακαλώ μην απαντήσετε απευθείας σε αυτό το μήνυμα."
+            : "This is an automated email. Please do not reply directly to this message.";
+        var copyright = isGreek ? "Με επιφύλαξη παντός δικαιώματος." : "All rights reserved.";
+
+        return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #2563eb; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                    .content {{ background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }}
+                    .body-text {{ background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.8; }}
+                    .footer {{ background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-radius: 0 0 8px 8px; }}
+                </style>
+            </head>
+            <body>
+                <div class='header'>
+                    <h1>Invoqs</h1>
+                </div>
+                <div class='content'>
+                    <p>{greeting}</p>
+                    <div class='body-text'>{encodedBody}</div>
+                    <p>{signOff}<br>ANDREAS SAVVA SERVICES COMPANY LTD</p>
+                </div>
+                <div class='footer'>
+                    <p>{footerNote}</p>
+                    <p>&copy; {DateTime.Now.Year} Invoqs. {copyright}</p>
+                </div>
+            </body>
+            </html>";
+    }
+
     private bool IsValidEmail(string email)
     {
         if (string.IsNullOrWhiteSpace(email))

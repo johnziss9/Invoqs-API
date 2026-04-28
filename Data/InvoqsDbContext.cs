@@ -19,6 +19,8 @@ public class InvoqsDbContext : DbContext
     public DbSet<Receipt> Receipts { get; set; }
     public DbSet<ReceiptInvoice> ReceiptInvoices { get; set; }
     public DbSet<Statement> Statements { get; set; }
+    public DbSet<BulkEmailLog> BulkEmailLogs { get; set; }
+    public DbSet<BulkEmailRecipient> BulkEmailRecipients { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -175,6 +177,37 @@ public class InvoqsDbContext : DbContext
             entity.HasIndex(e => e.StatementNumber).IsUnique();
             entity.HasQueryFilter(e => !e.IsDeleted);
         });
+
+        // BulkEmailLog configuration
+        modelBuilder.Entity<BulkEmailLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Subject).HasMaxLength(500);
+            entity.Property(e => e.Language).HasMaxLength(5);
+
+            entity.HasOne(l => l.SentByUser)
+                  .WithMany()
+                  .HasForeignKey(l => l.SentByUserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // BulkEmailRecipient configuration
+        modelBuilder.Entity<BulkEmailRecipient>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CustomerName).HasMaxLength(200);
+            entity.Property(e => e.Email).HasMaxLength(200);
+
+            entity.HasOne(r => r.BulkEmailLog)
+                  .WithMany(l => l.Recipients)
+                  .HasForeignKey(r => r.BulkEmailLogId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(r => r.Customer)
+                  .WithMany()
+                  .HasForeignKey(r => r.CustomerId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     public override int SaveChanges()
@@ -198,13 +231,13 @@ public class InvoqsDbContext : DbContext
         {
             if (entry.State == EntityState.Added)
             {
-                if (entry.Property("CreatedDate") != null)
+                if (entry.Metadata.FindProperty("CreatedDate") != null)
                     entry.Property("CreatedDate").CurrentValue = DateTime.UtcNow;
             }
 
             if (entry.State == EntityState.Modified)
             {
-                if (entry.Property("UpdatedDate") != null)
+                if (entry.Metadata.FindProperty("UpdatedDate") != null)
                     entry.Property("UpdatedDate").CurrentValue = DateTime.UtcNow;
             }
         }
