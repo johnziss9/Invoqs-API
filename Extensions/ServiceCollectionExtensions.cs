@@ -80,6 +80,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPdfService, PdfService>();
         services.AddScoped<IReceiptService, ReceiptService>();
         services.AddScoped<IStatementService, StatementService>();
+        services.AddScoped<ICustomerStatementService, CustomerStatementService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IBulkEmailLogService, BulkEmailLogService>();
 
