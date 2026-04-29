@@ -953,6 +953,279 @@ public class PdfService : IPdfService
         });
     }
 
+    public async Task<byte[]> GenerateCustomerStatementPdfAsync(int customerStatementId)
+    {
+        try
+        {
+            var statement = await _context.CustomerStatements
+                .Include(s => s.Customer)
+                    .ThenInclude(c => c.Emails)
+                .FirstOrDefaultAsync(s => s.Id == customerStatementId && !s.IsDeleted);
+
+            if (statement == null)
+                throw new InvalidOperationException($"Customer statement with ID {customerStatementId} not found");
+
+            var allInvoices = await _context.Invoices
+                .Where(i => !i.IsDeleted &&
+                            i.CustomerId == statement.CustomerId &&
+                            i.Status != InvoiceStatus.Draft &&
+                            i.CreatedDate >= statement.StartDate &&
+                            i.CreatedDate <= statement.EndDate)
+                .OrderBy(i => i.CreatedDate)
+                .ToListAsync();
+
+            var invoiceIds = allInvoices.Select(i => i.Id).ToList();
+            var jobAddressMap = await _context.Jobs
+                .IgnoreQueryFilters()
+                .Where(j => j.InvoiceId.HasValue && invoiceIds.Contains(j.InvoiceId.Value))
+                .Select(j => new { j.InvoiceId, j.Address })
+                .ToListAsync();
+            var addressByInvoiceId = jobAddressMap
+                .GroupBy(j => j.InvoiceId!.Value)
+                .ToDictionary(g => g.Key, g => g.First().Address);
+
+            var activeInvoices = allInvoices.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
+            var cancelledInvoices = allInvoices.Where(i => i.Status == InvoiceStatus.Cancelled).ToList();
+
+            var pdfBytes = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
+
+                    page.Header().Element(ComposeStatementHeader);
+                    page.Content().Element(c => ComposeCustomerStatementContent(c, statement, activeInvoices, cancelledInvoices, addressByInvoiceId));
+                    page.Footer().AlignCenter().Text(x =>
+                    {
+                        x.Span("Σελίδα ");
+                        x.CurrentPageNumber();
+                        x.Span(" από ");
+                        x.TotalPages();
+                        x.Span(" • ");
+                        x.Span(DateTime.UtcNow.ToString("dd/MM/yy HH:mm"));
+                    });
+                });
+            }).GeneratePdf();
+
+            return pdfBytes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating customer statement PDF for ID: {Id}", customerStatementId);
+            throw;
+        }
+    }
+
+    private void ComposeCustomerStatementContent(IContainer container, CustomerStatement statement, List<Invoice> activeInvoices, List<Invoice> cancelledInvoices, Dictionary<int, string> addressByInvoiceId)
+    {
+        container.PaddingVertical(20).Column(column =>
+        {
+            column.Spacing(15);
+
+            // Title
+            column.Item().AlignCenter().Text("Κατάσταση Πελάτη").FontSize(22).SemiBold();
+            column.Item().AlignCenter().Text("Customer Statement").FontSize(13).Light();
+
+            // Statement info + Customer info
+            column.Item().Row(row =>
+            {
+                // Customer details (left)
+                row.RelativeItem().Column(col =>
+                {
+                    col.Item().Text(statement.Customer.Name).FontSize(11).SemiBold();
+                    if (!string.IsNullOrEmpty(statement.Customer.Phone))
+                        col.Item().Text($"Τηλ: {statement.Customer.Phone}").FontSize(9);
+                    foreach (var email in statement.Customer.Emails)
+                        col.Item().Text(email.Email).FontSize(9);
+                    if (!string.IsNullOrEmpty(statement.Customer.VatNumber))
+                        col.Item().Text($"ΑΦΜ: {statement.Customer.VatNumber}").FontSize(9);
+                    if (!string.IsNullOrEmpty(statement.Customer.CompanyRegistrationNumber))
+                        col.Item().Text($"Αρ. Εταιρείας: {statement.Customer.CompanyRegistrationNumber}").FontSize(9);
+                });
+
+                // Statement details (right)
+                row.RelativeItem().AlignRight().Column(col =>
+                {
+                    col.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(80).Text("Αριθμός:").SemiBold().FontSize(9);
+                        r.AutoItem().Text(statement.StatementNumber).FontSize(9);
+                    });
+                    col.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(80).Text("Ημερομηνία:").SemiBold().FontSize(9);
+                        r.AutoItem().Text(statement.CreatedDate.ToString("dd/MM/yyyy")).FontSize(9);
+                    });
+                    col.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(80).Text("Περίοδος:").SemiBold().FontSize(9);
+                        r.AutoItem().Text($"{statement.StartDate:dd/MM/yyyy} - {statement.EndDate:dd/MM/yyyy}").FontSize(9);
+                    });
+                });
+            });
+
+            column.Item().LineHorizontal(1).LineColor(Colors.Grey.Medium);
+
+            // Active invoices table
+            if (activeInvoices.Any())
+            {
+                column.Item().PaddingTop(5).Text("Τιμολόγια").FontSize(11).SemiBold();
+
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(70);  // Invoice #
+                        columns.ConstantColumn(60);  // Date
+                        columns.ConstantColumn(70);  // Status
+                        columns.RelativeColumn(2);   // Payment Method
+                        columns.RelativeColumn();    // Amount (excl VAT)
+                        columns.RelativeColumn();    // VAT
+                        columns.RelativeColumn();    // Total
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(HeaderStyle).Text("Αρ. Τιμολ.").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).Text("Ημερομηνία").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).Text("Κατάσταση").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).Text("Τρόπος Πληρ.").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).AlignRight().Text("Ποσό").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).AlignRight().Text("ΦΠΑ").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).AlignRight().Text("Σύνολο").FontSize(8).SemiBold();
+
+                        static IContainer HeaderStyle(IContainer c) =>
+                            c.BorderBottom(1).BorderColor(Colors.Grey.Lighten1).PaddingVertical(4).PaddingHorizontal(2);
+                    });
+
+                    foreach (var invoice in activeInvoices)
+                    {
+                        var paymentText = TranslatePaymentMethod(invoice.PaymentMethod);
+                        if (!string.IsNullOrEmpty(invoice.PaymentReference))
+                            paymentText += $" ({invoice.PaymentReference})";
+
+                        addressByInvoiceId.TryGetValue(invoice.Id, out var jobAddress);
+
+                        table.Cell().Element(BodyStyle).Column(c =>
+                        {
+                            c.Item().Text(invoice.InvoiceNumber).FontSize(8);
+                            if (!string.IsNullOrEmpty(jobAddress))
+                                c.Item().Text(jobAddress).FontSize(6.5f).FontColor(Colors.Grey.Darken1);
+                        });
+                        table.Cell().Element(BodyStyle).Text(invoice.CreatedDate.ToString("dd/MM/yy")).FontSize(8);
+                        table.Cell().Element(BodyStyle).Text(TranslateInvoiceStatus(invoice.Status)).FontSize(7);
+                        table.Cell().Element(BodyStyle).Text(paymentText).FontSize(7);
+                        table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.Subtotal:N2}").FontSize(8);
+                        table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.VatAmount:N2}").FontSize(8);
+                        table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.Total:N2}").FontSize(8);
+
+                        static IContainer BodyStyle(IContainer c) =>
+                            c.BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingVertical(3).PaddingHorizontal(2);
+                    }
+                });
+            }
+
+            // Cancelled invoices table
+            if (cancelledInvoices.Any())
+            {
+                column.Item().PaddingTop(15).Text("Ακυρωμένα Τιμολόγια").FontSize(11).SemiBold().FontColor(Colors.Grey.Darken1);
+
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(60);
+                        columns.ConstantColumn(70);
+                        columns.RelativeColumn(2);
+                        columns.RelativeColumn();
+                        columns.RelativeColumn();
+                        columns.RelativeColumn();
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(HeaderStyle).Text("Αρ. Τιμολ.").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).Text("Ημερομηνία").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).Text("Κατάσταση").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).Text("Τρόπος Πληρ.").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).AlignRight().Text("Ποσό").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).AlignRight().Text("ΦΠΑ").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderStyle).AlignRight().Text("Σύνολο").FontSize(8).SemiBold();
+
+                        static IContainer HeaderStyle(IContainer c) =>
+                            c.BorderBottom(1).BorderColor(Colors.Grey.Lighten1).PaddingVertical(4).PaddingHorizontal(2);
+                    });
+
+                    foreach (var invoice in cancelledInvoices)
+                    {
+                        addressByInvoiceId.TryGetValue(invoice.Id, out var jobAddress);
+
+                        table.Cell().Element(BodyStyle).Column(c =>
+                        {
+                            c.Item().Text(invoice.InvoiceNumber).FontSize(8).FontColor(Colors.Grey.Medium);
+                            if (!string.IsNullOrEmpty(jobAddress))
+                                c.Item().Text(jobAddress).FontSize(6.5f).FontColor(Colors.Grey.Lighten1);
+                        });
+                        table.Cell().Element(BodyStyle).Text(invoice.CreatedDate.ToString("dd/MM/yy")).FontSize(8).FontColor(Colors.Grey.Medium);
+                        table.Cell().Element(BodyStyle).Text(TranslateInvoiceStatus(invoice.Status)).FontSize(7).FontColor(Colors.Grey.Medium);
+                        table.Cell().Element(BodyStyle).Text(TranslatePaymentMethod(invoice.PaymentMethod)).FontSize(7).FontColor(Colors.Grey.Medium);
+                        table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.Subtotal:N2}").FontSize(8).FontColor(Colors.Grey.Medium);
+                        table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.VatAmount:N2}").FontSize(8).FontColor(Colors.Grey.Medium);
+                        table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.Total:N2}").FontSize(8).FontColor(Colors.Grey.Medium);
+
+                        static IContainer BodyStyle(IContainer c) =>
+                            c.BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingVertical(3).PaddingHorizontal(2);
+                    }
+                });
+            }
+
+            // Totals summary
+            column.Item().PaddingTop(20).LineHorizontal(2).LineColor(Colors.Grey.Medium);
+
+            column.Item().PaddingTop(10).AlignRight().Column(totals =>
+            {
+                totals.Item().Row(r =>
+                {
+                    r.AutoItem().Width(160).Text("Σύνολο Τιμολογίων:").FontSize(9);
+                    r.AutoItem().Text($"€{statement.TotalInvoiced:N2}").FontSize(9);
+                });
+                if (statement.TotalPaid > 0)
+                {
+                    totals.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(160).Text("Πληρωμένα:").FontSize(9).FontColor(Colors.Green.Darken1);
+                        r.AutoItem().Text($"€{statement.TotalPaid:N2}").FontSize(9).FontColor(Colors.Green.Darken1);
+                    });
+                }
+                if (statement.TotalPartiallyPaid > 0)
+                {
+                    totals.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(160).Text("Μερικώς Πληρωμένα:").FontSize(9).FontColor(Colors.Orange.Darken1);
+                        r.AutoItem().Text($"€{statement.TotalPartiallyPaid:N2}").FontSize(9).FontColor(Colors.Orange.Darken1);
+                    });
+                }
+                if (statement.TotalCancelled > 0)
+                {
+                    totals.Item().Row(r =>
+                    {
+                        r.AutoItem().Width(160).Text("Ακυρωμένα:").FontSize(9).FontColor(Colors.Grey.Medium);
+                        r.AutoItem().Text($"€{statement.TotalCancelled:N2}").FontSize(9).FontColor(Colors.Grey.Medium);
+                    });
+                }
+                totals.Item().PaddingTop(5).Row(r =>
+                {
+                    r.AutoItem().Width(160).Text("Υπόλοιπο:").FontSize(13).SemiBold().FontColor(Colors.Red.Darken1);
+                    r.AutoItem().Text($"€{statement.OutstandingBalance:N2}").FontSize(13).SemiBold().FontColor(Colors.Red.Darken1);
+                });
+            });
+        });
+    }
+
     private string TranslateInvoiceStatus(InvoiceStatus status)
     {
         return status switch

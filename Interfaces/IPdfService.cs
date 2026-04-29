@@ -5,4 +5,5 @@ public interface IPdfService
     Task<byte[]> GenerateInvoicePdfAsync(int invoiceId);
     Task<byte[]> GenerateReceiptPdfAsync(int receiptId, string userFirstName, string userLastName);
     Task<byte[]> GenerateStatementPdfAsync(int statementId);
+    Task<byte[]> GenerateCustomerStatementPdfAsync(int customerStatementId);
 }

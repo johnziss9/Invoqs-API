@@ -505,6 +505,96 @@ public class EmailService : IEmailService
             </html>";
     }
 
+    public async Task<EmailResponseDto> SendCustomerStatementEmailAsync(CustomerStatementDTO statement, byte[] pdfData, List<string> recipientEmails)
+    {
+        try
+        {
+            _logger.LogInformation("Sending customer statement email for Statement ID: {StatementId}", statement.Id);
+
+            if (statement == null)
+                return new EmailResponseDto { Success = false, ErrorMessage = "Statement not found" };
+
+            if (recipientEmails == null || !recipientEmails.Any() || recipientEmails.All(e => string.IsNullOrWhiteSpace(e)))
+                return new EmailResponseDto { Success = false, ErrorMessage = "No valid recipient emails provided" };
+
+            var emailMessage = new EmailMessageDto
+            {
+                ToEmail = recipientEmails[0],
+                ToName = statement.CustomerName,
+                BccEmails = recipientEmails.Skip(1).ToList(),
+                Subject = $"Κατάσταση Πελάτη #{statement.StatementNumber} - {statement.CustomerName}",
+                HtmlBody = GenerateCustomerStatementEmailHtml(statement),
+                AttachmentData = pdfData,
+                AttachmentFileName = $"{statement.StatementNumber}.pdf"
+            };
+
+            return await SendEmailWithRetryAsync(emailMessage, 3);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send customer statement email for Statement ID: {StatementId}", statement?.Id);
+            return new EmailResponseDto { Success = false, ErrorMessage = $"Failed to send email: {ex.Message}" };
+        }
+    }
+
+    private string GenerateCustomerStatementEmailHtml(CustomerStatementDTO statement)
+    {
+        return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset='utf-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #3b82f6; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }}
+                    .content {{ background-color: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }}
+                    .details {{ background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; }}
+                    .detail-row {{ display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }}
+                    .detail-label {{ font-weight: bold; color: #6b7280; }}
+                    .outstanding {{ font-size: 22px; font-weight: bold; color: #dc2626; }}
+                    .footer {{ background-color: #f3f4f6; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-radius: 0 0 8px 8px; }}
+                </style>
+            </head>
+            <body>
+                <div class='header'>
+                    <h1>Κατάσταση Πελάτη</h1>
+                    <p>{statement.CustomerName}</p>
+                </div>
+                <div class='content'>
+                    <div class='details'>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Αριθμός Κατάστασης:</span>
+                            <span>{statement.StatementNumber}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Περίοδος:</span>
+                            <span>{statement.StartDate:dd/MM/yyyy} - {statement.EndDate:dd/MM/yyyy}</span>
+                        </div>
+                        <div class='detail-row'>
+                            <span class='detail-label'>Σύνολο Τιμολογίων:</span>
+                            <span>€{statement.TotalInvoiced:N2}</span>
+                        </div>
+                        {(statement.TotalPaid > 0 ? $@"<div class='detail-row'>
+                            <span class='detail-label'>Πληρωμένο:</span>
+                            <span style='color:#16a34a'>€{statement.TotalPaid:N2}</span>
+                        </div>" : "")}
+                        <div class='detail-row'>
+                            <span class='detail-label'>Υπόλοιπο:</span>
+                            <span class='outstanding'>€{statement.OutstandingBalance:N2}</span>
+                        </div>
+                    </div>
+                    <p>Η πλήρης κατάσταση είναι συνημμένη σε αυτό το email.</p>
+                    <p>Με εκτίμηση,<br>A. SAVVA SERVICES COMPANY LTD</p>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated email. Please do not reply directly to this message.</p>
+                    <p>&copy; {DateTime.Now.Year} Invoqs. All rights reserved.</p>
+                </div>
+            </body>
+            </html>";
+    }
+
     public async Task<EmailResponseDto> SendInvoiceCancelledEmailAsync(InvoiceDTO invoice)
     {
         try

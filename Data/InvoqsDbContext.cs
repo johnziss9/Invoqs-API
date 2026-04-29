@@ -19,6 +19,7 @@ public class InvoqsDbContext : DbContext
     public DbSet<Receipt> Receipts { get; set; }
     public DbSet<ReceiptInvoice> ReceiptInvoices { get; set; }
     public DbSet<Statement> Statements { get; set; }
+    public DbSet<CustomerStatement> CustomerStatements { get; set; }
     public DbSet<BulkEmailLog> BulkEmailLogs { get; set; }
     public DbSet<BulkEmailRecipient> BulkEmailRecipients { get; set; }
 
@@ -176,6 +177,20 @@ public class InvoqsDbContext : DbContext
             entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.HasIndex(e => e.StatementNumber).IsUnique();
             entity.HasQueryFilter(e => !e.IsDeleted);
+        });
+
+        // CustomerStatement configuration
+        modelBuilder.Entity<CustomerStatement>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.CreatedDate).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.HasIndex(e => e.StatementNumber).IsUnique();
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
+            entity.HasOne(s => s.Customer)
+                  .WithMany()
+                  .HasForeignKey(s => s.CustomerId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // BulkEmailLog configuration
