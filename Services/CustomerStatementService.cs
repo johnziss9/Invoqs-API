@@ -115,6 +115,7 @@ public class CustomerStatementService : ICustomerStatementService
             var endDateUtc = createDTO.EndDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
             var allInvoices = await _context.Invoices
+                .Include(i => i.Payments)
                 .Where(i => !i.IsDeleted &&
                             i.CustomerId == createDTO.CustomerId &&
                             i.Status != InvoiceStatus.Draft &&
@@ -146,9 +147,12 @@ public class CustomerStatementService : ICustomerStatementService
                 TotalInvoiced = activeInvoices.Sum(i => i.Total),
                 TotalVatAmount = activeInvoices.Sum(i => i.VatAmount),
                 TotalPaid = paidInvoices.Sum(i => i.Total),
-                TotalPartiallyPaid = partiallyPaidInvoices.Sum(i => i.Total),
+                TotalPartiallyPaid = partiallyPaidInvoices.Sum(i => i.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)),
                 TotalCancelled = cancelledInvoices.Sum(i => i.Total),
-                OutstandingBalance = outstandingInvoices.Sum(i => i.Total),
+                OutstandingBalance = outstandingInvoices.Sum(i =>
+                    i.Status == InvoiceStatus.PartiallyPaid
+                        ? i.Total - i.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)
+                        : i.Total),
                 InvoiceCount = activeInvoices.Count,
                 CancelledInvoiceCount = cancelledInvoices.Count,
                 CreatedDate = DateTime.UtcNow
