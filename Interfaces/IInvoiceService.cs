@@ -15,6 +15,7 @@ public interface IInvoiceService
     Task<InvoiceDTO?> RecordPaymentAsync(int invoiceId, RecordPaymentDTO paymentDTO);
     Task<InvoiceDTO?> MarkInvoiceAsPaidAsync(int id, MarkInvoiceAsPaidDTO paymentDTO);
     Task<InvoiceDTO?> CancelInvoiceAsync(int id, CancelInvoiceDTO? cancelDTO = null);
+    Task<bool> RecordBulkPaymentAsync(BulkPaymentDTO bulkPaymentDTO);
     Task<decimal> GetTotalOutstandingAsync();
     // Task<InvoiceStatisticsDTO> GetInvoiceStatisticsAsync();
 }
