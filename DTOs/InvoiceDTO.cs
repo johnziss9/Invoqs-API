@@ -222,6 +222,27 @@ public class MarkInvoiceAsPaidDTO
 }
 
 /// <summary>
+/// A single invoice allocation within a bulk payment
+/// </summary>
+public class BulkPaymentAllocationDTO
+{
+    public int InvoiceId { get; set; }
+    public decimal Amount { get; set; }
+}
+
+/// <summary>
+/// Data for recording a payment across multiple invoices in one go
+/// </summary>
+public class BulkPaymentDTO
+{
+    public DateTime PaymentDate { get; set; } = DateTime.Today;
+    public string PaymentMethod { get; set; } = "Bank Transfer";
+    public string? PaymentReference { get; set; }
+    public string? Notes { get; set; }
+    public List<BulkPaymentAllocationDTO> Allocations { get; set; } = new();
+}
+
+/// <summary>
 /// Data for cancelling an invoice
 /// </summary>
 public class CancelInvoiceDTO

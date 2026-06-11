@@ -425,6 +425,32 @@ namespace Invoqs.API.Controllers
         }
 
         /// <summary>
+        /// Record a payment across multiple invoices in a single transaction
+        /// </summary>
+        [HttpPost("bulk-payment")]
+        public async Task<ActionResult> RecordBulkPayment([FromBody] BulkPaymentDTO bulkPaymentDTO)
+        {
+            _logger.LogInformation("Recording bulk payment for {Count} invoices for user {UserId}",
+                bulkPaymentDTO.Allocations.Count, User.Identity?.Name);
+
+            try
+            {
+                await _invoiceService.RecordBulkPaymentAsync(bulkPaymentDTO);
+                return Ok();
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning("Bulk payment failed: {Error}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error recording bulk payment for user {UserId}", User.Identity?.Name);
+                return StatusCode(500, new { error = "An error occurred while recording the bulk payment" });
+            }
+        }
+
+        /// <summary>
         /// Cancel invoice
         /// </summary>
         [HttpPost("{id:int}/cancel")]

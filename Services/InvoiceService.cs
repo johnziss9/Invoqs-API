@@ -772,6 +772,83 @@ public class InvoiceService : IInvoiceService
         }
     }
 
+    public async Task<bool> RecordBulkPaymentAsync(BulkPaymentDTO bulkPaymentDTO)
+    {
+        var activeAllocations = bulkPaymentDTO.Allocations.Where(a => a.Amount > 0).ToList();
+        if (!activeAllocations.Any())
+            throw new InvalidOperationException("No allocations with a positive amount provided");
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var allocation in activeAllocations)
+            {
+                var invoice = await _context.Invoices
+                    .Include(i => i.Payments)
+                    .FirstOrDefaultAsync(i => i.Id == allocation.InvoiceId);
+
+                if (invoice == null)
+                    throw new InvalidOperationException($"Invoice {allocation.InvoiceId} not found");
+
+                if (invoice.Status != InvoiceStatus.Sent &&
+                    invoice.Status != InvoiceStatus.Delivered &&
+                    invoice.Status != InvoiceStatus.Overdue &&
+                    invoice.Status != InvoiceStatus.PartiallyPaid)
+                    throw new InvalidOperationException(
+                        $"Invoice {invoice.InvoiceNumber} cannot receive payments in its current status");
+
+                var amountPaid = invoice.Payments?.Where(p => !p.IsDeleted).Sum(p => p.Amount) ?? 0;
+                var remainingAmount = invoice.Total - amountPaid;
+
+                if (allocation.Amount > remainingAmount + 0.01m)
+                    throw new InvalidOperationException(
+                        $"Payment amount for {invoice.InvoiceNumber} exceeds remaining balance of €{remainingAmount:N2}");
+
+                var payment = new InvoicePayment
+                {
+                    InvoiceId = allocation.InvoiceId,
+                    Amount = allocation.Amount,
+                    PaymentDate = bulkPaymentDTO.PaymentDate,
+                    PaymentMethod = bulkPaymentDTO.PaymentMethod,
+                    PaymentReference = bulkPaymentDTO.PaymentReference,
+                    Notes = bulkPaymentDTO.Notes,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                _context.InvoicePayments.Add(payment);
+
+                var newAmountPaid = amountPaid + allocation.Amount;
+                var newRemaining = invoice.Total - newAmountPaid;
+
+                if (newRemaining <= 0.01m)
+                {
+                    invoice.Status = InvoiceStatus.Paid;
+                    invoice.PaymentDate = bulkPaymentDTO.PaymentDate;
+                    invoice.PaymentMethod = bulkPaymentDTO.PaymentMethod;
+                    invoice.PaymentReference = bulkPaymentDTO.PaymentReference;
+                }
+                else
+                {
+                    invoice.Status = InvoiceStatus.PartiallyPaid;
+                }
+
+                invoice.UpdatedDate = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Bulk payment recorded for {Count} invoices", activeAllocations.Count);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error recording bulk payment");
+            throw;
+        }
+    }
+
     public async Task<decimal> GetTotalOutstandingAsync()
     {
         try
