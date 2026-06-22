@@ -360,6 +360,43 @@ public class JobService : IJobService
         }
     }
 
+    public async Task<IEnumerable<string>> SearchTitlesAsync(string query, int? customerId = null)
+    {
+        try
+        {
+            var jobQuery = _context.Jobs.Where(j => !j.IsDeleted && !string.IsNullOrEmpty(j.Title));
+
+            if (customerId.HasValue && customerId.Value > 0)
+            {
+                jobQuery = jobQuery.Where(j => j.CustomerId == customerId.Value);
+
+                if (!string.IsNullOrWhiteSpace(query))
+                    jobQuery = jobQuery.Where(j => j.Title.ToLower().Contains(query.ToLower()));
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(query) && query.Length >= 2)
+                    jobQuery = jobQuery.Where(j => j.Title.ToLower().Contains(query.ToLower()));
+                else
+                    return Enumerable.Empty<string>();
+            }
+
+            var titles = await jobQuery
+                .Select(j => j.Title.Trim())
+                .Distinct()
+                .OrderBy(t => t)
+                .Take(10)
+                .ToListAsync();
+
+            return titles;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching titles with query: {Query}, CustomerId: {CustomerId}", query, customerId);
+            throw;
+        }
+    }
+
     public async Task<IEnumerable<string>> SearchAddressesAsync(string query, int? customerId = null)
     {
         try
@@ -371,7 +408,7 @@ public class JobService : IJobService
             if (customerId.HasValue && customerId.Value > 0)
             {
                 jobQuery = jobQuery.Where(j => j.CustomerId == customerId.Value);
-                
+
                 // When customer filter is applied, allow filtering with ANY query length
                 if (!string.IsNullOrWhiteSpace(query))
                 {

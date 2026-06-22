@@ -131,7 +131,7 @@ namespace Invoqs.API.Controllers
             try
             {
                 // If no customerId provided, require query with at least 2 characters
-                if ((!customerId.HasValue || customerId.Value == 0) && 
+                if ((!customerId.HasValue || customerId.Value == 0) &&
                     (string.IsNullOrWhiteSpace(query) || query.Length < 2))
                 {
                     return Ok(Enumerable.Empty<string>());
@@ -145,6 +145,27 @@ namespace Invoqs.API.Controllers
             {
                 _logger.LogError(ex, "Error searching addresses for user {UserId}, CustomerId: {CustomerId}", User.Identity?.Name, customerId);
                 return StatusCode(500, new { error = "An error occurred while searching addresses" });
+            }
+        }
+
+        [HttpGet("titles/search")]
+        public async Task<ActionResult<IEnumerable<string>>> SearchTitles([FromQuery] string? query, [FromQuery] int? customerId = null)
+        {
+            try
+            {
+                if ((!customerId.HasValue || customerId.Value == 0) &&
+                    (string.IsNullOrWhiteSpace(query) || query.Length < 2))
+                {
+                    return Ok(Enumerable.Empty<string>());
+                }
+
+                var titles = await _jobService.SearchTitlesAsync(query ?? "", customerId);
+                return Ok(titles);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching titles for user {UserId}, CustomerId: {CustomerId}", User.Identity?.Name, customerId);
+                return StatusCode(500, new { error = "An error occurred while searching titles" });
             }
         }
 
