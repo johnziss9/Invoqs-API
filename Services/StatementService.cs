@@ -88,32 +88,27 @@ public class StatementService : IStatementService
                 throw new InvalidOperationException("End date must be after or equal to start date");
             }
 
-            // Get all invoices in the date range (based on invoice created date)
+            // Get all fully paid invoices in the payment date range
             var startDateUtc = createDTO.StartDate.ToUniversalTime();
             var endDateUtc = createDTO.EndDate.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
 
-            var allInvoices = await _context.Invoices
+            var paidInvoices = await _context.Invoices
                 .Include(i => i.Customer)
                 .Where(i => !i.IsDeleted &&
-                           i.CreatedDate >= startDateUtc &&
-                           i.CreatedDate <= endDateUtc)
-                .OrderBy(i => i.CreatedDate)
+                           i.Status == InvoiceStatus.Paid &&
+                           i.PaymentDate >= startDateUtc &&
+                           i.PaymentDate <= endDateUtc)
+                .OrderBy(i => i.PaymentDate)
                 .ToListAsync();
 
-            if (!allInvoices.Any())
+            if (!paidInvoices.Any())
             {
-                throw new InvalidOperationException("No invoices found in the specified date range");
+                throw new InvalidOperationException("No paid invoices found in the specified date range");
             }
 
-            // Separate active and cancelled invoices
-            var activeInvoices = allInvoices.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
-            var cancelledInvoices = allInvoices.Where(i => i.Status == InvoiceStatus.Cancelled).ToList();
-
             // Calculate totals
-            var totalAmount = activeInvoices.Sum(i => i.Total);
-            var totalVatAmount = activeInvoices.Sum(i => i.VatAmount);
-            var cancelledAmount = cancelledInvoices.Sum(i => i.Total);
-            var cancelledVatAmount = cancelledInvoices.Sum(i => i.VatAmount);
+            var totalAmount = paidInvoices.Sum(i => i.Total);
+            var totalVatAmount = paidInvoices.Sum(i => i.VatAmount);
 
             // Create statement
             var statement = new Statement
@@ -123,10 +118,10 @@ public class StatementService : IStatementService
                 EndDate = endDateUtc,
                 TotalAmount = totalAmount,
                 TotalVatAmount = totalVatAmount,
-                CancelledAmount = cancelledAmount,
-                CancelledVatAmount = cancelledVatAmount,
-                InvoiceCount = activeInvoices.Count,
-                CancelledInvoiceCount = cancelledInvoices.Count,
+                CancelledAmount = 0,
+                CancelledVatAmount = 0,
+                InvoiceCount = paidInvoices.Count,
+                CancelledInvoiceCount = 0,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -286,37 +281,22 @@ public class StatementService : IStatementService
 
     private async Task<StatementDTO> MapStatementToDTO(Statement statement)
     {
-        // Get all invoices in the date range
-        var allInvoices = await _context.Invoices
+        // Get all fully paid invoices in the payment date range
+        var paidInvoices = await _context.Invoices
             .Include(i => i.Customer)
             .Where(i => !i.IsDeleted &&
-                       i.CreatedDate >= statement.StartDate &&
-                       i.CreatedDate <= statement.EndDate)
-            .OrderBy(i => i.CreatedDate)
+                       i.Status == InvoiceStatus.Paid &&
+                       i.PaymentDate >= statement.StartDate &&
+                       i.PaymentDate <= statement.EndDate)
+            .OrderBy(i => i.PaymentDate)
             .ToListAsync();
 
-        // Separate active and cancelled invoices
-        var activeInvoices = allInvoices
-            .Where(i => i.Status != InvoiceStatus.Cancelled)
+        var invoiceDTOs = paidInvoices
             .Select(i => new StatementInvoiceDTO
             {
                 InvoiceId = i.Id,
                 InvoiceNumber = i.InvoiceNumber,
-                InvoiceDate = i.CreatedDate,
-                CustomerName = i.Customer.Name,
-                Total = i.Total,
-                VatAmount = i.VatAmount,
-                Status = i.Status
-            })
-            .ToList();
-
-        var cancelledInvoices = allInvoices
-            .Where(i => i.Status == InvoiceStatus.Cancelled)
-            .Select(i => new StatementInvoiceDTO
-            {
-                InvoiceId = i.Id,
-                InvoiceNumber = i.InvoiceNumber,
-                InvoiceDate = i.CreatedDate,
+                InvoiceDate = i.PaymentDate!.Value,
                 CustomerName = i.Customer.Name,
                 Total = i.Total,
                 VatAmount = i.VatAmount,
@@ -332,17 +312,17 @@ public class StatementService : IStatementService
             EndDate = statement.EndDate,
             TotalAmount = statement.TotalAmount,
             TotalVatAmount = statement.TotalVatAmount,
-            CancelledAmount = statement.CancelledAmount,
-            CancelledVatAmount = statement.CancelledVatAmount,
+            CancelledAmount = 0,
+            CancelledVatAmount = 0,
             InvoiceCount = statement.InvoiceCount,
-            CancelledInvoiceCount = statement.CancelledInvoiceCount,
+            CancelledInvoiceCount = 0,
             CreatedDate = statement.CreatedDate,
             IsSent = statement.IsSent,
             SentDate = statement.SentDate,
             IsDelivered = statement.IsDelivered,
             DeliveredDate = statement.DeliveredDate,
-            Invoices = activeInvoices,
-            CancelledInvoices = cancelledInvoices
+            Invoices = invoiceDTOs,
+            CancelledInvoices = new()
         };
     }
 }
