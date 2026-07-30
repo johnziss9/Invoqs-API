@@ -35,6 +35,7 @@ public class ReceiptService : IReceiptService
                     .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
+                        .ThenInclude(i => i.Payments)
                 .Where(r => !r.IsDeleted)
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
@@ -60,6 +61,7 @@ public class ReceiptService : IReceiptService
                     .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
+                        .ThenInclude(i => i.Payments)
                 .Where(r => !r.IsDeleted)
                 .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted);
 
@@ -88,6 +90,7 @@ public class ReceiptService : IReceiptService
                     .ThenInclude(c => c.Emails)
                 .Include(r => r.ReceiptInvoices)
                     .ThenInclude(ri => ri.Invoice)
+                        .ThenInclude(i => i.Payments)
                 .Where(r => r.CustomerId == customerId && !r.IsDeleted)
                 .OrderByDescending(r => r.CreatedDate)
                 .ToListAsync();
@@ -115,8 +118,9 @@ public class ReceiptService : IReceiptService
                 throw new InvalidOperationException($"Customer with ID {createDTO.CustomerId} does not exist");
             }
 
-            // Verify all invoices exist, are paid, and belong to the customer
+            // Verify all invoices exist, are paid or partially paid, and belong to the customer
             var invoices = await _context.Invoices
+                .Include(i => i.Payments)
                 .Where(i => createDTO.InvoiceIds.Contains(i.Id))
                 .ToListAsync();
 
@@ -127,11 +131,11 @@ public class ReceiptService : IReceiptService
 
             var invalidInvoices = invoices.Where(i =>
                 i.CustomerId != createDTO.CustomerId ||
-                i.Status != InvoiceStatus.Paid).ToList();
+                (i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.PartiallyPaid)).ToList();
 
             if (invalidInvoices.Any())
             {
-                throw new InvalidOperationException("All invoices must be paid and belong to the specified customer");
+                throw new InvalidOperationException("All invoices must be paid or partially paid and belong to the specified customer");
             }
 
             // Validate discount if provided
@@ -142,7 +146,10 @@ public class ReceiptService : IReceiptService
                     throw new InvalidOperationException("Discount amount cannot be negative");
                 }
 
-                var calculatedTotal = invoices.Sum(i => i.Total);
+                var calculatedTotal = invoices.Sum(i =>
+                    i.Status == InvoiceStatus.PartiallyPaid
+                        ? i.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)
+                        : i.Total);
                 if (createDTO.DiscountAmount.Value > calculatedTotal)
                 {
                     throw new InvalidOperationException(
@@ -160,22 +167,26 @@ public class ReceiptService : IReceiptService
 
             // Add receipt first to get the ID
             _context.Receipts.Add(receipt);
-            await _context.SaveChangesAsync(); 
+            await _context.SaveChangesAsync();
 
             // Calculate total and create receipt invoices
             decimal totalAmount = 0;
             foreach (var invoice in invoices)
             {
+                var allocatedAmount = invoice.Status == InvoiceStatus.PartiallyPaid
+                    ? invoice.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)
+                    : invoice.Total;
+
                 var receiptInvoice = new ReceiptInvoice
                 {
                     ReceiptId = receipt.Id,
                     InvoiceId = invoice.Id,
-                    AllocatedAmount = invoice.Total,
+                    AllocatedAmount = allocatedAmount,
                     CreatedDate = DateTime.UtcNow
                 };
 
                 _context.ReceiptInvoices.Add(receiptInvoice);
-                totalAmount += invoice.Total;
+                totalAmount += allocatedAmount;
             }
 
             receipt.TotalAmount = totalAmount;

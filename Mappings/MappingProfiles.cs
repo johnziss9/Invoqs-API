@@ -128,6 +128,11 @@ public class MappingProfiles : Profile
                 src.LineItems.OrderBy(li => li.Job != null ? li.Job.JobDate : DateTime.MaxValue)))
             .ForMember(dest => dest.HasReceipt,
                 opt => opt.MapFrom(src => src.ReceiptInvoices.Any(ri => !ri.Receipt.IsDeleted)))
+            .ForMember(dest => dest.ExistingReceipts, opt => opt.MapFrom((src, dest) =>
+                src.ReceiptInvoices
+                    .Where(ri => !ri.Receipt.IsDeleted)
+                    .Select(ri => new InvoiceReceiptRefDTO { Id = ri.Receipt.Id, ReceiptNumber = ri.Receipt.ReceiptNumber })
+                    .ToList()))
             .ForMember(dest => dest.AmountPaid,
                 opt => opt.MapFrom(src => src.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)))
             .ForMember(dest => dest.RemainingAmount,
@@ -203,9 +208,18 @@ public class MappingProfiles : Profile
         CreateMap<ReceiptInvoice, ReceiptInvoiceDTO>()
             .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice.InvoiceNumber))
             .ForMember(dest => dest.InvoiceDate, opt => opt.MapFrom(src => src.Invoice.CreatedDate))
-            .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => src.Invoice.PaymentDate))
-            .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.Invoice.PaymentMethod))
-            .ForMember(dest => dest.PaymentReference, opt => opt.MapFrom(src => src.Invoice.PaymentReference));
+            .ForMember(dest => dest.InvoiceStatus, opt => opt.MapFrom(src => src.Invoice.Status))
+            .ForMember(dest => dest.Payments, opt => opt.MapFrom(src =>
+                src.Invoice.Payments.Where(p => !p.IsDeleted).OrderBy(p => p.PaymentDate).ToList()))
+            .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom((src, dest) =>
+                src.Invoice.PaymentDate ??
+                src.Invoice.Payments.Where(p => !p.IsDeleted).OrderByDescending(p => p.PaymentDate).FirstOrDefault()?.PaymentDate))
+            .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom((src, dest) =>
+                src.Invoice.PaymentMethod ??
+                src.Invoice.Payments.Where(p => !p.IsDeleted).OrderByDescending(p => p.PaymentDate).FirstOrDefault()?.PaymentMethod))
+            .ForMember(dest => dest.PaymentReference, opt => opt.MapFrom((src, dest) =>
+                src.Invoice.PaymentReference ??
+                src.Invoice.Payments.Where(p => !p.IsDeleted).OrderByDescending(p => p.PaymentDate).FirstOrDefault()?.PaymentReference));
     }
 }
 
