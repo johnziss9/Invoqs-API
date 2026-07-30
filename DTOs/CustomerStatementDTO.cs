@@ -60,6 +60,16 @@ public class CustomerStatementInvoiceDTO
     public string? PaymentMethod { get; set; }
     public string? PaymentReference { get; set; }
     public string? JobAddress { get; set; }
+    public List<InvoicePaymentLineDTO> Payments { get; set; } = new();
+    public decimal? AmountRemaining { get; set; }
+}
+
+public class InvoicePaymentLineDTO
+{
+    public decimal Amount { get; set; }
+    public string PaymentMethod { get; set; } = string.Empty;
+    public string? PaymentReference { get; set; }
+    public DateTime PaymentDate { get; set; }
 }
 
 public class CreateCustomerStatementDTO
