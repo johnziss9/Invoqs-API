@@ -276,6 +276,7 @@ public class CustomerStatementService : ICustomerStatementService
     private async Task<CustomerStatementDTO> MapToDTO(CustomerStatement statement)
     {
         var allInvoices = await _context.Invoices
+            .Include(i => i.Payments)
             .Where(i => !i.IsDeleted &&
                         i.CustomerId == statement.CustomerId &&
                         i.Status != InvoiceStatus.Draft &&
@@ -296,18 +297,31 @@ public class CustomerStatementService : ICustomerStatementService
 
         var activeInvoices = allInvoices
             .Where(i => i.Status != InvoiceStatus.Cancelled)
-            .Select(i => new CustomerStatementInvoiceDTO
+            .Select(i =>
             {
-                InvoiceId = i.Id,
-                InvoiceNumber = i.InvoiceNumber,
-                InvoiceDate = i.CreatedDate,
-                Subtotal = i.Subtotal,
-                VatAmount = i.VatAmount,
-                Total = i.Total,
-                Status = i.Status,
-                PaymentMethod = i.PaymentMethod,
-                PaymentReference = i.PaymentReference,
-                JobAddress = addressByInvoiceId.TryGetValue(i.Id, out var addr) ? addr : null
+                var payments = i.Payments.Where(p => !p.IsDeleted).OrderBy(p => p.PaymentDate).ToList();
+                var amountPaid = payments.Sum(p => p.Amount);
+                return new CustomerStatementInvoiceDTO
+                {
+                    InvoiceId = i.Id,
+                    InvoiceNumber = i.InvoiceNumber,
+                    InvoiceDate = i.CreatedDate,
+                    Subtotal = i.Subtotal,
+                    VatAmount = i.VatAmount,
+                    Total = i.Total,
+                    Status = i.Status,
+                    PaymentMethod = i.PaymentMethod,
+                    PaymentReference = i.PaymentReference,
+                    JobAddress = addressByInvoiceId.TryGetValue(i.Id, out var addr) ? addr : null,
+                    Payments = payments.Select(p => new InvoicePaymentLineDTO
+                    {
+                        Amount = p.Amount,
+                        PaymentMethod = p.PaymentMethod,
+                        PaymentReference = p.PaymentReference,
+                        PaymentDate = p.PaymentDate
+                    }).ToList(),
+                    AmountRemaining = i.Status == InvoiceStatus.PartiallyPaid ? i.Total - amountPaid : null
+                };
             })
             .ToList();
 

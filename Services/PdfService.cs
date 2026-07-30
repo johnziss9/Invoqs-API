@@ -889,6 +889,7 @@ public class PdfService : IPdfService
                 throw new InvalidOperationException($"Customer statement with ID {customerStatementId} not found");
 
             var allInvoices = await _context.Invoices
+                .Include(i => i.Payments)
                 .Where(i => !i.IsDeleted &&
                             i.CustomerId == statement.CustomerId &&
                             i.Status != InvoiceStatus.Draft &&
@@ -1026,9 +1027,9 @@ public class PdfService : IPdfService
 
                     foreach (var invoice in activeInvoices)
                     {
-                        var paymentText = TranslatePaymentMethod(invoice.PaymentMethod);
-                        if (!string.IsNullOrEmpty(invoice.PaymentReference))
-                            paymentText += $" ({invoice.PaymentReference})";
+                        var activePayments = invoice.Payments.Where(p => !p.IsDeleted).OrderBy(p => p.PaymentDate).ToList();
+                        var isPartiallyPaid = invoice.Status == InvoiceStatus.PartiallyPaid;
+                        var amountRemaining = isPartiallyPaid ? invoice.Total - activePayments.Sum(p => p.Amount) : (decimal?)null;
 
                         addressByInvoiceId.TryGetValue(invoice.Id, out var jobAddress);
 
@@ -1040,10 +1041,35 @@ public class PdfService : IPdfService
                         });
                         table.Cell().Element(BodyStyle).Text(invoice.CreatedDate.ToString("dd/MM/yy")).FontSize(8);
                         table.Cell().Element(BodyStyle).Text(TranslateInvoiceStatus(invoice.Status)).FontSize(7);
-                        table.Cell().Element(BodyStyle).Text(paymentText).FontSize(7);
+                        table.Cell().Element(BodyStyle).Column(c =>
+                        {
+                            if (activePayments.Any())
+                            {
+                                foreach (var payment in activePayments)
+                                {
+                                    var paymentColor = isPartiallyPaid ? Colors.Orange.Darken1 : Colors.Green.Darken1;
+                                    var lineText = $"€{payment.Amount:N2} {TranslatePaymentMethod(payment.PaymentMethod)}";
+                                    if (!string.IsNullOrEmpty(payment.PaymentReference))
+                                        lineText += $" ({payment.PaymentReference})";
+                                    c.Item().Text(lineText).FontSize(7).FontColor(paymentColor);
+                                }
+                            }
+                            else
+                            {
+                                var paymentText = TranslatePaymentMethod(invoice.PaymentMethod);
+                                if (!string.IsNullOrEmpty(invoice.PaymentReference))
+                                    paymentText += $" ({invoice.PaymentReference})";
+                                c.Item().Text(paymentText).FontSize(7);
+                            }
+                        });
                         table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.Subtotal:N2}").FontSize(8);
                         table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.VatAmount:N2}").FontSize(8);
-                        table.Cell().Element(BodyStyle).AlignRight().Text($"€{invoice.Total:N2}").FontSize(8);
+                        table.Cell().Element(BodyStyle).AlignRight().Column(c =>
+                        {
+                            c.Item().AlignRight().Text($"€{invoice.Total:N2}").FontSize(8);
+                            if (amountRemaining.HasValue)
+                                c.Item().AlignRight().Text($"Υπόλοιπο: €{amountRemaining:N2}").FontSize(7).FontColor(Colors.Orange.Darken1);
+                        });
 
                         static IContainer BodyStyle(IContainer c) =>
                             c.BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingVertical(3).PaddingHorizontal(2);
