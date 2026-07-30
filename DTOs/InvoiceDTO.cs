@@ -31,6 +31,7 @@ public class InvoiceDTO
     public string? CancellationReason { get; set; }
     public string? CancellationNotes { get; set; }
     public bool HasReceipt { get; set; }
+    public List<InvoiceReceiptRefDTO> ExistingReceipts { get; set; } = new();
 
     // Payment tracking
     public decimal AmountPaid { get; set; }
@@ -269,3 +270,9 @@ public class CancelInvoiceDTO
 //     public decimal MonthlyRevenue { get; set; }
 //     public decimal YearlyRevenue { get; set; }
 // }
+
+public class InvoiceReceiptRefDTO
+{
+    public int Id { get; set; }
+    public string ReceiptNumber { get; set; } = string.Empty;
+}
