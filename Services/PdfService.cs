@@ -713,14 +713,17 @@ public class PdfService : IPdfService
                 throw new InvalidOperationException($"Statement with ID {statementId} not found");
             }
 
-            var paidInvoices = await _context.Invoices
+            var allInvoices = await _context.Invoices
                 .Include(i => i.Customer)
                 .Where(i => !i.IsDeleted &&
-                           i.Status == InvoiceStatus.Paid &&
-                           i.PaymentDate >= statement.StartDate &&
-                           i.PaymentDate <= statement.EndDate)
-                .OrderBy(i => i.PaymentDate)
+                           i.Status != InvoiceStatus.Draft &&
+                           i.CreatedDate >= statement.StartDate &&
+                           i.CreatedDate <= statement.EndDate)
+                .OrderBy(i => i.CreatedDate)
                 .ToListAsync();
+
+            var activeInvoices = allInvoices.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
+            var cancelledInvoices = allInvoices.Where(i => i.Status == InvoiceStatus.Cancelled).ToList();
 
             var pdfBytes = Document.Create(container =>
             {
@@ -732,7 +735,7 @@ public class PdfService : IPdfService
                     page.DefaultTextStyle(x => x.FontSize(10).FontFamily("Arial"));
 
                     page.Header().Element(ComposeStatementHeader);
-                    page.Content().Element(container => ComposeStatementContent(container, statement, paidInvoices));
+                    page.Content().Element(container => ComposeStatementContent(container, statement, activeInvoices, cancelledInvoices));
                     page.Footer().AlignCenter().Text(x =>
                     {
                         x.Span("Σελίδα ");
@@ -771,7 +774,7 @@ public class PdfService : IPdfService
         });
     }
 
-    private void ComposeStatementContent(IContainer container, Statement statement, List<Invoice> paidInvoices)
+    private void ComposeStatementContent(IContainer container, Statement statement, List<Invoice> activeInvoices, List<Invoice> cancelledInvoices)
     {
         container.PaddingVertical(20).Column(column =>
         {
@@ -800,7 +803,7 @@ public class PdfService : IPdfService
                 {
                     col.Item().Row(r =>
                     {
-                        r.AutoItem().Width(100).Text("Περίοδος Πληρωμής:").SemiBold();
+                        r.AutoItem().Width(80).Text("Περίοδος:").SemiBold();
                         r.AutoItem().Text($"{statement.StartDate:dd/MM/yy} - {statement.EndDate:dd/MM/yy}");
                     });
                 });
@@ -808,9 +811,9 @@ public class PdfService : IPdfService
 
             column.Item().PaddingTop(10).LineHorizontal(1).LineColor(Colors.Grey.Medium);
 
-            if (paidInvoices.Any())
+            if (activeInvoices.Any())
             {
-                column.Item().PaddingTop(15).Text("Εξοφλημένα Τιμολόγια (Paid Invoices)").FontSize(12).SemiBold();
+                column.Item().PaddingTop(15).Text("Τιμολόγια (Active Invoices)").FontSize(12).SemiBold();
 
                 column.Item().Table(table =>
                 {
@@ -827,7 +830,7 @@ public class PdfService : IPdfService
                     table.Header(header =>
                     {
                         header.Cell().Element(HeaderCellStyle).Text("Αρ. Τιμολογίου").FontSize(8).SemiBold();
-                        header.Cell().Element(HeaderCellStyle).Text("Ημ. Πληρωμής").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Ημερομηνία").FontSize(8).SemiBold();
                         header.Cell().Element(HeaderCellStyle).Text("Πελάτης").FontSize(8).SemiBold();
                         header.Cell().Element(HeaderCellStyle).AlignRight().Text("Ποσό (συμπ. ΦΠΑ)").FontSize(8).SemiBold();
                         header.Cell().Element(HeaderCellStyle).AlignRight().Text("ΦΠΑ").FontSize(8).SemiBold();
@@ -839,10 +842,10 @@ public class PdfService : IPdfService
                         }
                     });
 
-                    foreach (var invoice in paidInvoices)
+                    foreach (var invoice in activeInvoices)
                     {
                         table.Cell().Element(BodyCellStyle).Text(invoice.InvoiceNumber).FontSize(8);
-                        table.Cell().Element(BodyCellStyle).Text(invoice.PaymentDate!.Value.ToString("dd/MM/yy")).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(invoice.CreatedDate.ToString("dd/MM/yy")).FontSize(8);
                         table.Cell().Element(BodyCellStyle).Text(invoice.Customer.Name).FontSize(8);
                         table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.Total:N2}").FontSize(8);
                         table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.VatAmount:N2}").FontSize(8);
@@ -854,6 +857,82 @@ public class PdfService : IPdfService
                         }
                     }
                 });
+
+                column.Item().PaddingTop(10).AlignRight().Column(summaryColumn =>
+                {
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Σύνολο Ενεργών:").SemiBold();
+                        row.AutoItem().Text($"€{statement.TotalAmount:N2} (συμπ. ΦΠΑ)").SemiBold();
+                    });
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(120).Text("Σύνολο ΦΠΑ:").SemiBold();
+                        row.AutoItem().Text($"€{statement.TotalVatAmount:N2}").SemiBold();
+                    });
+                });
+            }
+
+            if (cancelledInvoices.Any())
+            {
+                column.Item().PaddingTop(20).Text("Ακυρωμένα Τιμολόγια (Cancelled Invoices)").FontSize(12).SemiBold();
+
+                column.Item().Table(table =>
+                {
+                    table.ColumnsDefinition(columns =>
+                    {
+                        columns.ConstantColumn(80);
+                        columns.ConstantColumn(70);
+                        columns.RelativeColumn(2);
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(70);
+                        columns.ConstantColumn(80);
+                    });
+
+                    table.Header(header =>
+                    {
+                        header.Cell().Element(HeaderCellStyle).Text("Αρ. Τιμολογίου").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Ημερομηνία").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Πελάτης").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("Ποσό (συμπ. ΦΠΑ)").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).AlignRight().Text("ΦΠΑ").FontSize(8).SemiBold();
+                        header.Cell().Element(HeaderCellStyle).Text("Κατάσταση").FontSize(8).SemiBold();
+
+                        static IContainer HeaderCellStyle(IContainer container)
+                        {
+                            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten1).PaddingVertical(5).PaddingHorizontal(2);
+                        }
+                    });
+
+                    foreach (var invoice in cancelledInvoices)
+                    {
+                        table.Cell().Element(BodyCellStyle).Text(invoice.InvoiceNumber).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(invoice.CreatedDate.ToString("dd/MM/yy")).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(invoice.Customer.Name).FontSize(8);
+                        table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.Total:N2}").FontSize(8);
+                        table.Cell().Element(BodyCellStyle).AlignRight().Text($"€{invoice.VatAmount:N2}").FontSize(8);
+                        table.Cell().Element(BodyCellStyle).Text(TranslateInvoiceStatus(invoice.Status)).FontSize(7);
+
+                        static IContainer BodyCellStyle(IContainer container)
+                        {
+                            return container.BorderBottom(1).BorderColor(Colors.Grey.Lighten3).PaddingVertical(3).PaddingHorizontal(2);
+                        }
+                    }
+                });
+
+                column.Item().PaddingTop(10).AlignRight().Column(summaryColumn =>
+                {
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(140).Text("Σύνολο Ακυρωμένων:").SemiBold();
+                        row.AutoItem().Text($"€{statement.CancelledAmount:N2} (συμπ. ΦΠΑ)").SemiBold();
+                    });
+                    summaryColumn.Item().Row(row =>
+                    {
+                        row.AutoItem().Width(140).Text("Σύνολο ΦΠΑ Ακυρωμένων:").SemiBold();
+                        row.AutoItem().Text($"€{statement.CancelledVatAmount:N2}").SemiBold();
+                    });
+                });
             }
 
             column.Item().PaddingTop(20).LineHorizontal(2).LineColor(Colors.Grey.Medium);
@@ -862,17 +941,16 @@ public class PdfService : IPdfService
             {
                 grandTotalColumn.Item().Row(row =>
                 {
-                    row.AutoItem().Width(140).Text("ΣΥΝΟΛΟ ΕΞΟΦΛΗΜΕΝΩΝ:").FontSize(14).SemiBold();
+                    row.AutoItem().Width(140).Text("ΓΕΝΙΚΟ ΣΥΝΟΛΟ:").FontSize(14).SemiBold();
                     row.AutoItem().Text($"€{statement.TotalAmount:N2} (συμπ. ΦΠΑ)").FontSize(14).SemiBold();
-                });
-                grandTotalColumn.Item().Row(row =>
-                {
-                    row.AutoItem().Width(140).Text("Σύνολο ΦΠΑ:").SemiBold();
-                    row.AutoItem().Text($"€{statement.TotalVatAmount:N2}").SemiBold();
                 });
             });
 
-            column.Item().PaddingTop(20).Text($"Σύνολο Εξοφλημένων Τιμολογίων: {statement.InvoiceCount}").FontSize(9);
+            column.Item().PaddingTop(20).Text($"Σύνολο Τιμολογίων: {statement.InvoiceCount}").FontSize(9);
+            if (statement.CancelledInvoiceCount > 0)
+            {
+                column.Item().Text($"Σύνολο Ακυρωμένων: {statement.CancelledInvoiceCount}").FontSize(9);
+            }
         });
     }
 
