@@ -21,36 +21,6 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
-    public bool ValidateConfigurationAsync()
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(_emailSettings.SmtpServer) ||
-                string.IsNullOrWhiteSpace(_emailSettings.ApiKey) ||
-                string.IsNullOrWhiteSpace(_emailSettings.SenderEmail) ||
-                _emailSettings.SmtpPort <= 0)
-            {
-                _logger.LogWarning("Email configuration is incomplete");
-                return false;
-            }
-
-            // Validate email format
-            if (!IsValidEmail(_emailSettings.SenderEmail))
-            {
-                _logger.LogWarning("Invalid sender email format: {Email}", _emailSettings.SenderEmail);
-                return false;
-            }
-
-            _logger.LogInformation("Email configuration validated successfully");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Email configuration validation failed");
-            return false;
-        }
-    }
-
     public async Task<EmailResponseDto> SendInvoiceEmailAsync(InvoiceDTO invoice, byte[] pdfData, List<string>? recipientEmails = null)
     {
         try
@@ -791,22 +761,6 @@ public class EmailService : IEmailService
                 </div>
             </body>
             </html>";
-    }
-
-    private bool IsValidEmail(string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-            return false;
-
-        try
-        {
-            var addr = new System.Net.Mail.MailAddress(email);
-            return addr.Address == email;
-        }
-        catch
-        {
-            return false;
-        }
     }
 
     private string TranslateCancellationReason(string? reason)

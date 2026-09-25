@@ -10,5 +10,4 @@ public interface IEmailService
     Task<EmailResponseDto> SendCustomerStatementEmailAsync(CustomerStatementDTO statement, byte[] pdfData, List<string> recipientEmails);
     Task<EmailResponseDto> SendInvoiceCancelledEmailAsync(InvoiceDTO invoice);
     Task<EmailResponseDto> SendCustomEmailAsync(string toEmail, string toName, string subject, string body, string language = "el");
-    bool ValidateConfigurationAsync();
 }
