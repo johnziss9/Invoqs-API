@@ -33,6 +33,10 @@ public class InvoiceDTO
     public bool HasReceipt { get; set; }
     public List<InvoiceReceiptRefDTO> ExistingReceipts { get; set; } = new();
 
+    // Receipt allocation tracking
+    public decimal ReceiptedAmount { get; set; }
+    public decimal UnreceiptedAmount { get; set; }
+
     // Payment tracking
     public decimal AmountPaid { get; set; }
     public decimal RemainingAmount { get; set; }

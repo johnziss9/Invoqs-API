@@ -121,6 +121,8 @@ public class ReceiptService : IReceiptService
             // Verify all invoices exist, are paid or partially paid, and belong to the customer
             var invoices = await _context.Invoices
                 .Include(i => i.Payments)
+                .Include(i => i.ReceiptInvoices)
+                    .ThenInclude(ri => ri.Receipt)
                 .Where(i => createDTO.InvoiceIds.Contains(i.Id))
                 .ToListAsync();
 
@@ -138,6 +140,18 @@ public class ReceiptService : IReceiptService
                 throw new InvalidOperationException("All invoices must be paid or partially paid and belong to the specified customer");
             }
 
+            // An invoice may only be receipted for the amount not already covered by a live receipt
+            var unreceiptedAmounts = invoices.ToDictionary(i => i.Id, i => GetUnreceiptedAmount(i));
+
+            var fullyReceiptedInvoices = invoices.Where(i => unreceiptedAmounts[i.Id] <= 0).ToList();
+
+            if (fullyReceiptedInvoices.Any())
+            {
+                var numbers = string.Join(", ", fullyReceiptedInvoices.Select(i => i.InvoiceNumber));
+                throw new InvalidOperationException(
+                    $"The following invoices already appear in full on an existing receipt: {numbers}");
+            }
+
             // Validate discount if provided
             if (createDTO.DiscountAmount.HasValue)
             {
@@ -146,10 +160,7 @@ public class ReceiptService : IReceiptService
                     throw new InvalidOperationException("Discount amount cannot be negative");
                 }
 
-                var calculatedTotal = invoices.Sum(i =>
-                    i.Status == InvoiceStatus.PartiallyPaid
-                        ? i.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)
-                        : i.Total);
+                var calculatedTotal = invoices.Sum(i => unreceiptedAmounts[i.Id]);
                 if (createDTO.DiscountAmount.Value > calculatedTotal)
                 {
                     throw new InvalidOperationException(
@@ -173,9 +184,7 @@ public class ReceiptService : IReceiptService
             decimal totalAmount = 0;
             foreach (var invoice in invoices)
             {
-                var allocatedAmount = invoice.Status == InvoiceStatus.PartiallyPaid
-                    ? invoice.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)
-                    : invoice.Total;
+                var allocatedAmount = unreceiptedAmounts[invoice.Id];
 
                 var receiptInvoice = new ReceiptInvoice
                 {
@@ -324,6 +333,24 @@ public class ReceiptService : IReceiptService
             _logger.LogError(ex, "Error marking receipt ID: {ReceiptId} as delivered", receiptId);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Amount of an invoice that can still go on a receipt: what is receiptable
+    /// (payments so far while partially paid, otherwise the invoice total)
+    /// minus what live receipts already cover.
+    /// </summary>
+    private static decimal GetUnreceiptedAmount(Invoice invoice)
+    {
+        var receiptable = invoice.Status == InvoiceStatus.PartiallyPaid
+            ? invoice.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)
+            : invoice.Total;
+
+        var alreadyReceipted = invoice.ReceiptInvoices
+            .Where(ri => !ri.Receipt.IsDeleted)
+            .Sum(ri => ri.AllocatedAmount);
+
+        return receiptable - alreadyReceipted;
     }
 
     private async Task<string> GenerateReceiptNumberAsync()
