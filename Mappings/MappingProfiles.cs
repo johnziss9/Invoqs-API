@@ -133,6 +133,17 @@ public class MappingProfiles : Profile
                     .Where(ri => !ri.Receipt.IsDeleted)
                     .Select(ri => new InvoiceReceiptRefDTO { Id = ri.Receipt.Id, ReceiptNumber = ri.Receipt.ReceiptNumber })
                     .ToList()))
+            .ForMember(dest => dest.ReceiptedAmount, opt => opt.MapFrom(src =>
+                src.ReceiptInvoices
+                    .Where(ri => !ri.Receipt.IsDeleted)
+                    .Sum(ri => ri.AllocatedAmount)))
+            .ForMember(dest => dest.UnreceiptedAmount, opt => opt.MapFrom(src =>
+                (src.Status == InvoiceStatus.PartiallyPaid
+                    ? src.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)
+                    : src.Total)
+                - src.ReceiptInvoices
+                    .Where(ri => !ri.Receipt.IsDeleted)
+                    .Sum(ri => ri.AllocatedAmount)))
             .ForMember(dest => dest.AmountPaid,
                 opt => opt.MapFrom(src => src.Payments.Where(p => !p.IsDeleted).Sum(p => p.Amount)))
             .ForMember(dest => dest.RemainingAmount,
