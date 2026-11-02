@@ -937,12 +937,15 @@ public class InvoiceService : IInvoiceService
 
     private static string GetJobInvoiceDescription(Job job)
     {
+        // Greek, to match the rest of the invoice and the detail strings added below
         var typeDisplay = job.Type switch
         {
-            JobType.SkipRental => "Skip Rental",
-            JobType.SandDelivery => "Sand Delivery",
-            JobType.ForkLiftService => "Fork Lift Service",
-            JobType.Transfer => "Transfer",
+            JobType.SkipRental => "Ενοικίαση Skip",
+            JobType.SandDelivery => "Παράδοση Άμμου",
+            JobType.ForkLiftService => "Υπηρεσία Forklift",
+            JobType.Transfer => "Μεταφορά",
+            JobType.SellForklift => "Πώληση Forklift",
+            JobType.SellSkip => "Πώληση Skip",
             _ => job.Type.ToString()
         };
 

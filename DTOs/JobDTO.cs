@@ -42,25 +42,6 @@ public class JobDTO
     public DateTime CustomerCreatedDate { get; set; }
     public DateTime? CustomerUpdatedDate { get; set; }
 
-    // Computed properties from Blazor model
-    public string TypeDisplayName => Type switch
-    {
-        JobType.SkipRental => "Skip Rental",
-        JobType.SandDelivery => "Sand Delivery",
-        JobType.ForkLiftService => "Fork Lift Service",
-        JobType.Transfer => "Transfer",
-        _ => Type.ToString()
-    };
-
-    public string TypeIcon => Type switch
-    {
-        JobType.SkipRental => "/images/icons/skip.png",
-        JobType.SandDelivery => "/images/icons/sand.png",
-        JobType.ForkLiftService => "/images/icons/forklift.png",
-        JobType.Transfer => "/images/icons/transfer.png",
-        _ => "bi-briefcase"
-    };
-
     public string ShortAddress
     {
         get
@@ -72,17 +53,6 @@ public class JobDTO
     }
 
     public bool CanBeInvoiced => !IsInvoiced;
-
-    public decimal GetVatRate() => Type switch
-    {
-        JobType.SkipRental => 0.05m, // 5%
-        JobType.SandDelivery => 0.19m, // 19%
-        JobType.ForkLiftService => 0.19m, // 19%
-        JobType.Transfer => 0.19m, // 19%
-        _ => 0.19m
-    };
-
-    public string GetInvoiceDescription() => $"{TypeDisplayName} - {Title} at {ShortAddress}";
 }
 
 /// <summary>
@@ -99,15 +69,6 @@ public class JobSummaryDTO
     public DateTime JobDate { get; set; }
     public bool IsInvoiced { get; set; }
     public string CustomerName { get; set; } = string.Empty;
-
-    public string TypeDisplayName => Type switch
-    {
-        JobType.SkipRental => "Skip Rental",
-        JobType.SandDelivery => "Sand Delivery",
-        JobType.ForkLiftService => "Fork Lift Service",
-        JobType.Transfer => "Transfer",
-        _ => Type.ToString()
-    };
 }
 
 /// <summary>

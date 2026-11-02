@@ -233,15 +233,3 @@ public class MappingProfiles : Profile
                 src.Invoice.Payments.Where(p => !p.IsDeleted).OrderByDescending(p => p.PaymentDate).FirstOrDefault()?.PaymentReference));
     }
 }
-
-/// <summary>
-/// Mapping profile for dashboard data
-/// </summary>
-public class DashboardMappingProfile : Profile
-{
-    public DashboardMappingProfile()
-    {
-        // Custom mappings for dashboard aggregations will be handled in service layer
-        // since they require complex database queries and calculations
-    }
-}
