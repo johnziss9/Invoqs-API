@@ -145,7 +145,7 @@ public class CreateInvoiceDTO
 
     public List<int> JobIds { get; set; } = new();
 
-    public decimal VatRate { get; set; } = 0.19m; // 19% default
+    public decimal VatRate { get; set; }
 
     public int PaymentTermsDays { get; set; } = 30;
 
